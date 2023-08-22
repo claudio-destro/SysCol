@@ -1,3 +1,4 @@
+import {hrtime} from "node:process";
 import {PathOrFileDescriptor, readFile} from "node:fs";
 import {ReadlineParser, SerialPort} from "serialport";
 import {openSerialPort} from "./openSerialPort";
@@ -7,6 +8,8 @@ import {sleep} from "./sleep";
 import {stringifyHardwareCommand} from "./stringifyHardwareCommand";
 import {SysColTestScriptApi} from "../SysColApi";
 import {getTestOutcome} from "./getTestOutcome";
+
+const toMicroseconds = ([n, m]: [number, number]): number => n * 1000000 + m / 1000;
 
 /* eslint default-case: "off" */
 /* eslint no-continue: "off" */
@@ -139,14 +142,15 @@ export class TestScript implements SysColTestScriptApi {
   async #sendAndWait(cmd: string, timeout = this.#commandTimeout) {
     this.onLogCommand(cmd, this.#currentLine);
     return new Promise<{response: string; elapsed: number}>((resolve, reject) => {
-      const startTime = Date.now();
+      const startTime = toMicroseconds(hrtime());
 
       const onData = (response: string | Buffer): void => {
+        const endTime = toMicroseconds(hrtime());
         // eslint-disable-next-line no-use-before-define
         clearTimeout(id);
         resolve({
           response: response.toString(),
-          elapsed: Date.now() - startTime,
+          elapsed: endTime - startTime,
         });
       };
 

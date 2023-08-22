@@ -30,7 +30,11 @@ html, body {
   justify-content: flex-end;
 }
 
-#sys_col_log .sys_col_row {
+/*
+ * ROWS
+ */
+
+.sys_col_row {
   font-family: monospace;
   border: 0;
   border-bottom: 1px solid transparent;
@@ -40,46 +44,58 @@ html, body {
   cursor: pointer;
 }
 
-#sys_col_log .sys_col_row:hover {
-  border-bottom-color: #000000;
+.sys_col_row:hover {
 }
 
-#sys_col_log .sys_col_command {
-  color: gray;
+/*
+ * COMMANDS
+ */
+
+.sys_col_command {
 }
 
-#sys_col_log .sys_col_command:before {
+/*
+ * RESPONSES
+ */
+
+.sys_col_response {
+}
+
+.sys_col_response.pass {
+}
+
+.sys_col_response.fail,
+.sys_col_response.err {
+}
+
+/*
+ * PREFIXES
+ */
+
+.sys_col_command:before {
   color: #008000;
-  content: "▲";
+  content: "◀︎";
   display: inline-block;
   width: 1em;
 }
 
-#sys_col_log .sys_col_response:before {
+.sys_col_response:before {
   color: #800000;
-  content: "▼";
+  content: "▶︎";
   display: inline-block;
   width: 1em;
 }
 
-#sys_col_log .sys_col_message:before {
+.sys_col_message:before {
   color: #000000;
-  content: "i";
+  content: " ";
   display: inline-block;
   width: 1em;
 }
 
-#sys_col_log .sys_col_response {
-  color: #000000;
-}
-
-#sys_col_log .sys_col_response.pass {
-  color: #008000;
-}
-
-#sys_col_log .sys_col_response.fail, #sys_col_log .sys_col_response.err {
-  color: #800000;
-}
+/*
+ * TIMINGS
+ */
 
 .sys_col_elapsed {
   color: gray;
@@ -87,6 +103,67 @@ html, body {
 }
 
 .sys_col_elapsed:after {
-  content: "ms";
+  content: "μs";
 }
 
+/*
+ * COLOR SCHEMES
+ */
+
+@media (prefers-color-scheme: light) {
+  body {
+    background: #FFFFFF;
+  }
+
+  .sys_col_row,
+  .sys_col_command {
+    color: #000000;
+  }
+
+  .sys_col_row:hover {
+    border-bottom-color: #000000;
+  }
+
+  .sys_col_response {
+    font-weight: bold;
+    color: #000000;
+  }
+
+  .sys_col_response.pass {
+    color: #008000;
+  }
+
+  .sys_col_response.fail,
+  .sys_col_response.err {
+    color: #800000;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #333333;
+  }
+
+  .sys_col_row,
+  .sys_col_command {
+    color: #CCCCCC;
+  }
+
+  .sys_col_row:hover {
+    border-bottom-color: #999999;
+  }
+
+  .sys_col_response {
+    font-weight: normal;
+    color: #CCCCCC;
+  }
+
+  .sys_col_response.pass {
+    color: #00CC00;
+  }
+
+  .sys_col_response.fail,
+  .sys_col_response.err {
+    color: #CC0000;
+  }
+}

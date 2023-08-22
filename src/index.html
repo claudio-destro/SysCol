@@ -27,7 +27,7 @@
         if (elapsed > 0) {
           const lap = document.createElement("span");
           lap.className = "sys_col_elapsed";
-          lap.innerText = elapsed;
+          lap.innerText = elapsed.toFixed(0);
           row.appendChild(lap);
         }
         appendRow(row);
