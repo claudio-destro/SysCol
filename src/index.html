@@ -49,13 +49,19 @@
         const log = document.getElementById("sys_col_log");
         log.innerHTML = "";
       }
+
+      const executeScript = () => {
+        logMessage(`Execution started - ${new Date().toISOString()}`);
+        SysCol.executeScript();
+      };
+
     </script>
 </head>
 <body>
 <div id="sys_col">
     <main id="sys_col_log"></main>
     <footer id="sys_col_bar">
-        <button type="button" onclick="SysCol.executeScript()">Execute</button>
+        <button type="button" onclick="executeScript()">Execute</button>
         <button type="button" onclick="clearLogs()">Clear</button>
     </footer>
 </div>

@@ -30,6 +30,11 @@ html, body {
   justify-content: flex-end;
 }
 
+#sys_col_bar button {
+  margin: 0 0 0 0.5em;
+  border-radius: 0.25em;
+}
+
 /*
  * ROWS
  */
@@ -43,6 +48,7 @@ html, body {
   display: flex;
   cursor: pointer;
 }
+
 
 .sys_col_row:hover {
 }
@@ -115,6 +121,16 @@ html, body {
     background: #FFFFFF;
   }
 
+  button {
+    border: 1px solid #000000;
+    background: #EEEEEE;
+    color: #000000;
+  }
+
+  button:active {
+    background: #CCCCCC;
+  }
+
   .sys_col_row,
   .sys_col_command {
     color: #000000;
@@ -142,6 +158,16 @@ html, body {
 @media (prefers-color-scheme: dark) {
   body {
     background: #333333;
+  }
+
+  button {
+    border: 1px solid #333333;
+    background: #666666;
+    color: #EEEEEE;
+  }
+
+  button:active {
+    background: #999999;
   }
 
   .sys_col_row,
