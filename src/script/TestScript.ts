@@ -1,67 +1,65 @@
-const {readFile} = require("fs");
-const {ReadlineParser} = require("serialport");
-const {openSerialPort} = require("./openSerialPort");
-const {stringifyHardwareCommand, parseCommand} = require("./parseCommand");
-const {parseResponse, getTestOutcome} = require("./parseResponse");
-const {sleep} = require("./sleep");
+import {PathOrFileDescriptor, readFile} from "node:fs";
+import {ReadlineParser, SerialPort} from "serialport";
+import {openSerialPort} from "./openSerialPort";
+import {parseCommand} from "./parseCommand";
+import {parseResponse} from "./parseCommandResponse";
+import {sleep} from "./sleep";
+import {stringifyHardwareCommand} from "./stringifyHardwareCommand";
+import {SysColTestScriptApi} from "../SysColApi";
+import {getTestOutcome} from "./getTestOutcome";
 
 /* eslint default-case: "off" */
-/* eslint no-await-in-loop: "off" */
-
 /* eslint no-continue: "off" */
 
-const padNumber = (num, pad = 5, fill = "0") => String(num).padStart(pad, fill);
+const padNumber = (num: number, pad = 5, fill = "0") => String(num).padStart(pad, fill);
 
-class TestScript {
-  #data;
-
+export class TestScript implements SysColTestScriptApi {
+  #data: Array<string>;
   #currentLine = 0;
-
   #commandTimeout = 5000;
+  #serialPort: SerialPort;
+  #serialPortReader: ReadlineParser;
 
-  #serialPort;
-
-  #serialPortReader;
-
-  constructor(data) {
+  constructor(data: string | Buffer) {
     this.#data = data.toString().split(/\r\n|\r|\n/gm);
   }
 
-  static async fromFile(path) {
-    return new Promise((resolve, reject) => {
+  static async fromFile(path: PathOrFileDescriptor): Promise<TestScript> {
+    return new Promise<TestScript>((resolve, reject) => {
       readFile(path, (err, data) => (err ? reject(err) : resolve(new TestScript(data))));
     });
   }
 
-  static async from(data) {
+  static async from(data: string | Buffer) {
     return new TestScript(data);
   }
 
-  onScriptError(err, lineno) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  onScriptError(err: any, lineno: number): void {
     console.error("Error at line", lineno, err);
   }
 
-  onLogMessage(str) {
+  onLogMessage(str: string): void {
     console.log("===============", str);
   }
 
-  onLogCommand(cmd, lineno) {
+  onLogCommand(cmd: string, lineno: number): void {
     console.log(padNumber(lineno), "       <<", cmd.trim());
   }
 
-  onCommandError(cmd, lineno) {
+  onCommandError(cmd: string, lineno: number): void {
     console.error(padNumber(lineno), " ERROR >>", cmd.trim());
   }
 
-  onCommandResponse(str, elapsed, lineno) {
-    console.log(padNumber(lineno), "       >>", str.trim(), `in ${elapsed}ms`);
+  onCommandResponse(cmd: string, elapsed: number, lineno: number): void {
+    console.log(padNumber(lineno), "       >>", cmd.trim(), `in ${elapsed}ms`);
   }
 
-  onTestPassed(cmd, elapsed, lineno) {
+  onTestPassed(cmd: string, elapsed: number, lineno: number): void {
     console.info(padNumber(lineno), "  PASS >>", cmd.trim(), `in ${elapsed}ms`);
   }
 
-  onTestFailed(cmd, elapsed, lineno) {
+  onTestFailed(cmd: string, elapsed: number, lineno: number): void {
     console.warn(padNumber(lineno), "  FAIL >>", cmd.trim(), `in ${elapsed}ms`);
   }
 
@@ -75,7 +73,7 @@ class TestScript {
           continue;
         }
         if (cmd === "tst") {
-          switch (getTestOutcome(params).status) {
+          switch (getTestOutcome(params).result) {
             case "FAIL":
               this.onTestFailed(response, elapsed, this.#currentLine);
               continue;
@@ -94,7 +92,7 @@ class TestScript {
     }
   }
 
-  #nextLine() {
+  #nextLine(): string | null {
     if (this.#currentLine < this.#data.length) {
       const row = this.#data[this.#currentLine++];
       const m = /^([^#]*)/.exec(row);
@@ -121,10 +119,13 @@ class TestScript {
             this.#serialPortReader = this.#serialPort.pipe(new ReadlineParser());
             break;
           case "timeout":
-            this.#commandTimeout = Math.max(500, +args[0]);
+            {
+              const timeout = +args[0];
+              if (!isNaN(timeout)) this.#commandTimeout = timeout;
+            }
             break;
           case "wait":
-            await sleep(args[0]);
+            await sleep(+args[0]);
             break;
           default:
             throw new SyntaxError(`Unrecognized command ${JSON.stringify(cmd)}`);
@@ -135,16 +136,16 @@ class TestScript {
     }
   }
 
-  async #sendAndWait(cmd, timeout = this.#commandTimeout) {
+  async #sendAndWait(cmd: string, timeout = this.#commandTimeout) {
     this.onLogCommand(cmd, this.#currentLine);
-    return new Promise((resolve, reject) => {
+    return new Promise<{response: string; elapsed: number}>((resolve, reject) => {
       const startTime = Date.now();
 
-      const onData = response => {
+      const onData = (response: string | Buffer): void => {
         // eslint-disable-next-line no-use-before-define
         clearTimeout(id);
         resolve({
-          response,
+          response: response.toString(),
           elapsed: Date.now() - startTime,
         });
       };
@@ -164,7 +165,3 @@ class TestScript {
     });
   }
 }
-
-module.exports = {
-  TestScript,
-};

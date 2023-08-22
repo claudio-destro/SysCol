@@ -1,10 +1,11 @@
-const {app, dialog, Menu, BrowserWindow, ipcMain} = require("electron");
-const {EVENT_EXECUTE_SCRIPT} = require("./Events");
-const {loadSettings, saveSettings} = require("./settings");
-const {executeScript, loadScript, reloadScript} = require("./scripts");
-const {createWindow} = require("./createWindow");
+import {app, dialog, Menu, BrowserWindow, ipcMain} from "electron";
+import {Events} from "./Events";
+import {loadSettings, saveSettings} from "./settings";
+import {executeScript, loadScript, reloadScript} from "./scripts";
+import {createWindow} from "./createWindow";
+import {platform} from "node:process";
 
-const isMac = process.platform === "darwin";
+const isMac = platform === "darwin";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 // eslint-disable-next-line global-require
@@ -18,9 +19,7 @@ app.on("ready", loadSettings);
 app.on("before-quit", saveSettings);
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+  if (!isMac) app.quit();
 });
 
 app.on("activate", async () => {
@@ -31,12 +30,9 @@ app.on("activate", async () => {
   }
 });
 
-ipcMain.on(EVENT_EXECUTE_SCRIPT, async () => executeScript(BrowserWindow.getFocusedWindow()));
+ipcMain.on(Events.EXECUTE_SCRIPT, async () => executeScript(BrowserWindow.getFocusedWindow()));
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
-
-const template = [
+const menu = Menu.buildFromTemplate([
   {role: "appMenu"},
   {
     label: "File",
@@ -83,7 +79,6 @@ const template = [
   },
   {role: "windowMenu"},
   {role: "help"},
-];
+]);
 
-const menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
