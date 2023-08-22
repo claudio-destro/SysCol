@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>SysCol - [no script]</title>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            padding: 0;
+            margin: 0;
+        }
+
+        #sys_col {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: calc(100% - 50px) 50px;
+        }
+
+        #sys_col_log {
+            text-align: left;
+            box-sizing: border-box;
+            grid-column: span 12;
+            padding: .5em;
+            overflow: auto;
+        }
+
+        #sys_col_bar {
+            padding: .5em;
+            grid-column: span 12;
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+        }
+
+        #sys_col_log .sys_col_row {
+            font-family: monospace;
+            border: 0;
+            border-bottom: 1px solid transparent;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            cursor: pointer;
+        }
+
+        #sys_col_log .sys_col_row:hover {
+            border-bottom-color: #000000;
+        }
+
+        #sys_col_log .sys_col_command {
+            color: gray;
+        }
+
+        #sys_col_log .sys_col_command:before {
+            color: #008000;
+            content: "▲";
+            display: inline-block;
+            width: 1em;
+        }
+
+        #sys_col_log .sys_col_response:before {
+            color: #800000;
+            content: "▼";
+            display: inline-block;
+            width: 1em;
+        }
+
+        #sys_col_log .sys_col_message:before {
+            color: #000000;
+            content: "i";
+            display: inline-block;
+            width: 1em;
+        }
+
+        #sys_col_log .sys_col_response {
+            color: #000000;
+        }
+
+        #sys_col_log .sys_col_response.pass {
+            color: #008000;
+        }
+
+        #sys_col_log .sys_col_response.fail, #sys_col_log .sys_col_response.err {
+            color: #800000;
+        }
+
+        .sys_col_elapsed {
+            color: gray;
+            margin-left: auto;
+        }
+
+        .sys_col_elapsed:after {
+            content: "ms";
+        }
+
+    </style>
+    <script type="application/javascript">
+      const logCommand = (command, lineno) => {
+        const row = document.createElement("p");
+        row.className = "sys_col_command sys_col_row";
+        row.innerText = command;
+        appendRow(row);
+      };
+
+      const logCommandError = (response, lineno) => logCommandResponse(response, -1, lineno, "err");
+      const logTestPassed = (response, elapsed, lineno) => logCommandResponse(response, elapsed, lineno, "pass");
+      const logTestFailed = (response, elapsed, lineno) => logCommandResponse(response, elapsed, lineno, "fail");
+
+      const logCommandResponse = (response, elapsed, lineno, status) => {
+        const row = document.createElement("p");
+        row.className = "sys_col_response sys_col_row";
+        row.classList.toggle("pass", status === "pass");
+        row.classList.toggle("fail", status === "fail");
+        row.classList.toggle("err", status === "err");
+        const body = document.createElement("span");
+        body.innerText = response.toString().trim();
+        row.appendChild(body);
+        if (elapsed > 0) {
+          const lap = document.createElement("span");
+          lap.className = "sys_col_elapsed";
+          lap.innerText = elapsed;
+          row.appendChild(lap);
+        }
+        appendRow(row);
+      }
+
+      const logMessage = message => {
+        const row = document.createElement("p");
+        row.className = "sys_col_message sys_col_row";
+        row.innerText = message;
+        appendRow(row);
+      }
+
+      const appendRow = row => {
+        const log = document.getElementById("sys_col_log");
+        log.appendChild(row);
+      }
+
+      const clearLogs = () => {
+        const log = document.getElementById("sys_col_log");
+        log.innerHTML = "";
+      }
+    </script>
+</head>
+<body>
+<div id="sys_col">
+    <main id="sys_col_log"></main>
+    <footer id="sys_col_bar">
+        <button type="button" onclick="SysCol.executeScript()">Execute</button>
+        <button type="button" onclick="clearLogs()">Clear</button>
+    </footer>
+</div>
+<script>
+  SysCol.onSetScriptFile(file => document.title = `SysCol - ${file}`);
+  SysCol.onScriptError((err, lineno) => logMessage(`Error at line ${lineno}: ${err}`));
+  SysCol.onLogMessage(logMessage);
+  SysCol.onLogCommand(logCommand);
+  SysCol.onCommandError(logCommandError);
+  SysCol.onCommandResponse(logCommandResponse);
+  SysCol.onTestPassed(logTestPassed);
+  SysCol.onTestFailed(logTestFailed);
+</script>
+</body>
+</html>
