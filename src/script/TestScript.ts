@@ -68,8 +68,7 @@ export class TestScript implements SysColTestScriptApi {
 
   async executeScript() {
     try {
-      for await (const ret of this.#executeCommand()) {
-        const {response, elapsed} = ret;
+      for await (const {response, elapsed} of this.#executeSingleCommand()) {
         const [cmd, params] = parseResponse(response);
         if ("ERR" in params) {
           this.onCommandError(response, this.#currentLine);
@@ -96,15 +95,13 @@ export class TestScript implements SysColTestScriptApi {
   }
 
   #nextLine(): string | null {
-    if (this.#currentLine < this.#data.length) {
-      const row = this.#data[this.#currentLine++];
-      const m = /^([^#]*)/.exec(row);
-      return m && m[1].trim() ? m[1] : this.#nextLine();
-    }
-    return null;
+    if (this.#currentLine >= this.#data.length) return null;
+    const row = this.#data[this.#currentLine++];
+    const m = /^([^#]*)/.exec(row);
+    return m && m[1].trim() ? m[1] : this.#nextLine();
   }
 
-  async *#executeCommand() {
+  async *#executeSingleCommand() {
     for (;;) {
       const row = this.#nextLine();
       if (row === null) return;
