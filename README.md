@@ -1,5 +1,5 @@
 # SysCol
 
-Read and execute simple test script using [Node SerialPort](https://serialport.io)
+Read and execute simple test scripts using [Node SerialPort](https://serialport.io).
 
 Based on [Electron](https://www.electronjs.org).
