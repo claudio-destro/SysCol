@@ -6,7 +6,7 @@ import {PathOrFileDescriptor} from "node:fs";
 const SCRIPTS: Record<number, {file: PathOrFileDescriptor; script: TestScript}> = {};
 
 export const loadScript = async (file: PathOrFileDescriptor, window: BrowserWindow) => {
-  console.log(`loadScript ${JSON.stringify(file)} into window "${window.id}"`);
+  console.log(`Load script ${JSON.stringify(file)} into window "${window.id}"`);
   const script = await TestScript.fromFile(file);
   window.webContents.send(Events.SET_SCRIPT_FILE_NAME, file);
   script.onScriptError = (err, lineno) => window.webContents.send(Events.ON_SCRIPT_ERROR, err, lineno);

@@ -24,8 +24,8 @@ const getScripts = (): SysColScriptSettings => {
 
 export const loadSettings = () => {
   const data = getScripts();
-  console.log(`loadSettings from "${store.path}"`);
-  console.dir(data);
+  console.log(`Load settings from "${store.path}"`);
+  console.dir({[SETTINGS_SCRIPTS_KEY]: data});
   for (const windowSettings of data) {
     const {scriptFile, windowPosition} = windowSettings;
     createWindow(windowPosition).then(window => loadScript(scriptFile, window));
@@ -43,6 +43,6 @@ export const saveSettings = (): void => {
     };
   });
   store.set(SETTINGS_SCRIPTS_KEY, data);
-  console.log(`saveSettings to "${store.path}"`);
-  console.dir(data);
+  console.log(`Save settings to "${store.path}"`);
+  console.dir({[SETTINGS_SCRIPTS_KEY]: data});
 };

@@ -1,9 +1,9 @@
 import {app, dialog, Menu, BrowserWindow, ipcMain} from "electron";
+import {platform} from "node:process";
 import {Events} from "./Events";
 import {loadSettings, saveSettings} from "./settings";
 import {executeScript, loadScript, reloadScript} from "./scripts";
 import {createWindow} from "./createWindow";
-import {platform} from "node:process";
 
 const isMac = platform === "darwin";
 

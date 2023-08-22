@@ -17,12 +17,11 @@ export const createWindow = async ({x, y, width, height}: BrowserWindowRect = {w
     width,
     height,
     webPreferences: {
-      sandbox: false,
-      nodeIntegration: false,
+      // sandbox: false,
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
   });
-  await mainWindow.loadFile(MAIN_WINDOW_WEBPACK_ENTRY);
+  await mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
   // mainWindow.webContents.openDevTools();
   return mainWindow;
 };
