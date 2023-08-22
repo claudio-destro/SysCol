@@ -9,7 +9,7 @@ import {stringifyHardwareCommand} from "./stringifyHardwareCommand";
 import {SysColTestScriptApi} from "../SysColApi";
 import {getTestOutcome} from "./getTestOutcome";
 
-const toMicroseconds = ([n, m]: [number, number]): number => n * 1000000 + m / 1000;
+const hrtimeToMicroseconds = ([n, m]: [number, number]): number => n * 1000000 + m / 1000;
 
 /* eslint default-case: "off" */
 /* eslint no-continue: "off" */
@@ -134,18 +134,18 @@ export class TestScript implements SysColTestScriptApi {
             throw new SyntaxError(`Unrecognized command ${JSON.stringify(cmd)}`);
         }
       } else {
-        yield this.#sendAndWait(stringifyHardwareCommand(cmd, ...args));
+        yield this.#sendCommandAndWaitResponse(stringifyHardwareCommand(cmd, ...args));
       }
     }
   }
 
-  async #sendAndWait(cmd: string, timeout = this.#commandTimeout) {
+  async #sendCommandAndWaitResponse(cmd: string, timeout = this.#commandTimeout) {
     this.onLogCommand(cmd, this.#currentLine);
     return new Promise<{response: string; elapsed: number}>((resolve, reject) => {
-      const startTime = toMicroseconds(hrtime());
+      const startTime = hrtimeToMicroseconds(hrtime());
 
       const onData = (response: string | Buffer): void => {
-        const endTime = toMicroseconds(hrtime());
+        const endTime = hrtimeToMicroseconds(hrtime());
         // eslint-disable-next-line no-use-before-define
         clearTimeout(id);
         resolve({
