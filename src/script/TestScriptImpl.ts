@@ -23,8 +23,8 @@ export class TestScriptImpl implements TestScript {
   #data: Array<string>;
   #currentLine = 0;
   #commandTimeout = 5000;
-  #serialPort: SerialPort;
-  #serialPortReader: ReadlineParser;
+  #serialPort?: SerialPort | null;
+  #serialPortReader?: ReadlineParser | null;
 
   constructor(data: string | Buffer) {
     this.#data = data.toString().split(/\r\n|\r|\n/gm);
@@ -147,14 +147,14 @@ export class TestScriptImpl implements TestScript {
       };
 
       const id = setTimeout(() => {
-        this.#serialPortReader.off("data", onData);
+        this.#serialPortReader?.off("data", onData);
         reject(new RangeError(`"${cmd}" timed out after ${this.#commandTimeout}ms`));
       }, timeout);
 
-      this.#serialPortReader.once("data", onData);
+      this.#serialPortReader?.once("data", onData);
 
-      this.#serialPort.write(cmd, err => {
-        this.#serialPortReader.off("data", onData);
+      this.#serialPort?.write(cmd, err => {
+        this.#serialPortReader?.off("data", onData);
         clearTimeout(id);
         reject(err);
       });
