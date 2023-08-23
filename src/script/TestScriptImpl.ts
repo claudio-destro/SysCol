@@ -78,6 +78,7 @@ export class TestScriptImpl implements TestScript {
       this.#emit("error", err);
     } finally {
       this.#currentLine = 0;
+      this.#serialPort?.close();
     }
   }
 
