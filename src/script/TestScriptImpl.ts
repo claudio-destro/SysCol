@@ -55,6 +55,7 @@ export class TestScriptImpl implements TestScript {
   }
 
   async executeScript() {
+    this.#emit("message", new Date().toISOString());
     try {
       for await (const {response, elapsed} of this.#executeSingleCommand()) {
         const [cmd, params] = parseCommandResponse(response);

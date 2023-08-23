@@ -51,10 +51,7 @@
         log.innerHTML = "";
       }
 
-      const executeScript = () => {
-        logMessage(0, `Execution started - ${new Date().toISOString()}`);
-        SysCol.executeScript();
-      };
+      const executeScript = () => SysCol.executeScript();
 
       const setScriptFileName = (file) => document.title = `SysCol - ${file}`;
 

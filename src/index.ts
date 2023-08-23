@@ -62,15 +62,14 @@ const menu = Menu.buildFromTemplate([
   },
   {role: "editMenu"},
   {
-    label: "View",
-    role: "viewMenu",
+    label: "Script",
     submenu: [
       {
-        label: "Reload",
+        label: "Reload / Run",
         accelerator: "CommandOrControl+R",
         click: async () => {
           const window = BrowserWindow.getFocusedWindow();
-          window.webContents.once("did-finish-load", () => reloadScript(window));
+          window.webContents.once("did-finish-load", () => reloadScript(window).then(() => executeScript(window)));
           window.reload();
         },
       },
