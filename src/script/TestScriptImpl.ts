@@ -4,7 +4,7 @@ import {PathLike} from "node:fs";
 import {ReadlineParser, SerialPort} from "serialport";
 import {openSerialPort} from "./openSerialPort";
 import {parseCommand} from "./parseCommand";
-import {parseCommandResponse} from "./parseCommandResponse";
+import {parseCommandResponse, wasCommandMalformed} from "./parseCommandResponse";
 import {sleep} from "./sleep";
 import {stringifyHardwareCommand} from "./stringifyHardwareCommand";
 import {getTestResult} from "./getTestResult";
@@ -58,7 +58,7 @@ export class TestScriptImpl implements TestScript {
     try {
       for await (const {response, elapsed} of this.#executeSingleCommand()) {
         const [cmd, params] = parseCommandResponse(response);
-        if ("ERR" in params) {
+        if (wasCommandMalformed(params)) {
           this.#emit("commandError", response);
           continue;
         }
