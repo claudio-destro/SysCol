@@ -1,16 +1,8 @@
-export interface SysColTestScriptApi {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onScriptError(error: any, lineno: number): void;
-  onLogMessage(message: string): void;
-  onLogCommand(command: string, lineno: number): void;
-  onCommandError(command: string, lineno: number): void;
-  onCommandResponse(command: string, elapsed: number, lineno: number): void;
-  onTestPassed(command: string, elapsed: number, lineno: number): void;
-  onTestFailed(command: string, elapsed: number, lineno: number): void;
-}
+import {IpcRendererEvent, IpcRendererEventListenerMap} from "./IpcEvents";
 
-export type SysColApi = SysColTestScriptApi & {
-  onSetScriptFileName(name: string): void;
+export type SysColApi = {
+  registerEventListener<E extends IpcRendererEvent>(event: E, callback: IpcRendererEventListenerMap[E]): void;
+  unregisterEventListener<E extends IpcRendererEvent>(event: E, callback: IpcRendererEventListenerMap[E]): void;
   executeScript(): void;
 };
 

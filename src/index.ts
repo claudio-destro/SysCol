@@ -1,6 +1,5 @@
-import {app, dialog, Menu, BrowserWindow, ipcMain} from "electron";
+import {app, BrowserWindow, dialog, ipcMain, Menu} from "electron";
 import {platform} from "node:process";
-import {Events} from "./Events";
 import {loadSettings, saveSettings} from "./settings";
 import {executeScript, loadScript, reloadScript} from "./scripts";
 import {createWindow} from "./createWindow";
@@ -30,7 +29,7 @@ app.on("activate", async () => {
   }
 });
 
-ipcMain.on(Events.EXECUTE_SCRIPT, async () => executeScript(BrowserWindow.getFocusedWindow()));
+ipcMain.on("executeScript", async () => executeScript(BrowserWindow.getFocusedWindow()));
 
 const menu = Menu.buildFromTemplate([
   {role: "appMenu"},

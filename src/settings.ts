@@ -2,12 +2,12 @@ import {BrowserWindow} from "electron";
 import Store from "electron-store";
 import {getAllScripts, loadScript} from "./scripts";
 import {createWindow} from "./createWindow";
-import {PathOrFileDescriptor} from "node:fs";
+import {PathLike} from "node:fs";
 
 const SETTINGS_SCRIPTS_KEY = "scripts";
 
 type SysColScriptSettings = Array<{
-  scriptFile?: PathOrFileDescriptor;
+  scriptFile?: PathLike;
   windowPosition: {x?: number; y?: number; width: number; height: number};
 }>;
 

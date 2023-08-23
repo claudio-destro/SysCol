@@ -1,21 +1,29 @@
-import {TestScript} from "./script/TestScript";
-import {Events} from "./Events";
+import {TestScriptImpl} from "./script/TestScriptImpl";
 import {BrowserWindow} from "electron";
-import {PathOrFileDescriptor} from "node:fs";
+import {PathLike} from "node:fs";
+import {TestScript} from "./script/TestScript";
+import {TestScriptEvent, TestScriptListenerMap} from "./script/TestScriptEvents";
 
-const SCRIPTS: Record<number, {file: PathOrFileDescriptor; script: TestScript}> = {};
+const SCRIPTS: Record<number, {file: PathLike; script: TestScript}> = {};
 
-export const loadScript = async (file: PathOrFileDescriptor, window: BrowserWindow) => {
+const makeTestScriptEventListenerFactory = (script: TestScript, window: BrowserWindow) => {
+  return <E extends TestScriptEvent>(event: E) => {
+    // XXX prepend line number to every post
+    return (...args: Parameters<TestScriptListenerMap[E]>) => window.webContents.send(event, script.lineNumber, ...args);
+  };
+};
+
+export const loadScript = async (file: PathLike, window: BrowserWindow) => {
   console.log(`Load script ${JSON.stringify(file)} into window "${window.id}"`);
-  const script = await TestScript.fromFile(file);
-  window.webContents.send(Events.SET_SCRIPT_FILE_NAME, file);
-  script.onScriptError = (err, lineno) => window.webContents.send(Events.ON_SCRIPT_ERROR, err, lineno);
-  script.onLogMessage = str => window.webContents.send(Events.ON_LOG_MESSAGE, str);
-  script.onLogCommand = (cmd, lineno) => window.webContents.send(Events.ON_LOG_COMMAND, cmd, lineno);
-  script.onCommandError = (cmd, lineno) => window.webContents.send(Events.ON_COMMAND_ERROR, cmd, lineno);
-  script.onCommandResponse = (str, elapsed, lineno) => window.webContents.send(Events.ON_COMMAND_RESPONSE, str, elapsed, lineno);
-  script.onTestPassed = (str, elapsed, lineno) => window.webContents.send(Events.ON_TEST_PASSED, str, elapsed, lineno);
-  script.onTestFailed = (str, elapsed, lineno) => window.webContents.send(Events.ON_TEST_FAILED, str, elapsed, lineno);
+  const script = await TestScriptImpl.fromFile(file);
+  window.webContents.send("setScriptFileName", file);
+  const makeTestScriptEventListener = makeTestScriptEventListenerFactory(script, window);
+  script.on("error", makeTestScriptEventListener("error"));
+  script.on("message", makeTestScriptEventListener("message"));
+  script.on("command", makeTestScriptEventListener("command"));
+  script.on("commandError", makeTestScriptEventListener("commandError"));
+  script.on("response", makeTestScriptEventListener("response"));
+  script.on("test", makeTestScriptEventListener("test"));
   window.on("closed", () => delete SCRIPTS[window.id]);
   SCRIPTS[window.id] = {file, script};
 };
