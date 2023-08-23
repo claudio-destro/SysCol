@@ -4,10 +4,10 @@ import {PathLike} from "node:fs";
 import {ReadlineParser, SerialPort} from "serialport";
 import {openSerialPort} from "./openSerialPort";
 import {parseCommand} from "./parseCommand";
-import {parseResponse} from "./parseCommandResponse";
+import {parseCommandResponse} from "./parseCommandResponse";
 import {sleep} from "./sleep";
 import {stringifyHardwareCommand} from "./stringifyHardwareCommand";
-import {getTestOutcome} from "./getTestOutcome";
+import {getTestResult} from "./getTestResult";
 import {TestScript} from "./TestScript";
 import EventEmitter from "node:events";
 import {TestScriptEvent, TestScriptListenerMap, TestScriptListeners} from "./TestScriptEvents";
@@ -57,13 +57,13 @@ export class TestScriptImpl implements TestScript {
   async executeScript() {
     try {
       for await (const {response, elapsed} of this.#executeSingleCommand()) {
-        const [cmd, params] = parseResponse(response);
+        const [cmd, params] = parseCommandResponse(response);
         if ("ERR" in params) {
           this.#emit("commandError", response);
           continue;
         }
         if (cmd === "tst") {
-          const {result} = getTestOutcome(params);
+          const {result} = getTestResult(params);
           switch (result) {
             case "FAIL":
             case "PASS":
@@ -77,8 +77,11 @@ export class TestScriptImpl implements TestScript {
     } catch (err) {
       this.#emit("error", err);
     } finally {
+      this.#serialPort?.close(console.error);
+      this.#serialPortReader?.destroy();
+      this.#serialPortReader = null;
+      this.#serialPort = null;
       this.#currentLine = 0;
-      this.#serialPort?.close();
     }
   }
 

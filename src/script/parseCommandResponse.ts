@@ -16,7 +16,7 @@ const parseParameters = (params: string): Record<string, string> => {
 
 export type ParsedCommandResponse = [string, Record<string, string>];
 
-export const parseResponse = (str: string): ParsedCommandResponse => {
+export const parseCommandResponse = (str: string): ParsedCommandResponse => {
   const m = /\{SC,([A-Z]{3})([^}]*)}/.exec(str);
   if (m?.length >= 1) return [m[1].toLowerCase(), parseParameters(m[2])];
   throw new SyntaxError(`Unrecognized response ${JSON.stringify(str)}`);

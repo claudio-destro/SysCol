@@ -1,4 +1,4 @@
-import {BrowserWindow, contextBridge, ipcRenderer} from "electron";
+import {contextBridge, ipcRenderer} from "electron";
 import {IpcRendererEvent, IpcRendererEventListenerMap} from "./IpcEvents";
 import {SysColApi} from "./SysColApi";
 
@@ -28,10 +28,12 @@ const SYS_COL_API: SysColApi = {
     ipcRenderer.on(event, ipcListener);
   },
   unregisterEventListener<E extends IpcRendererEvent>(event: E, callback: IpcRendererEventListenerMap[E]): void {
-    REGISTERED_EVENTS[event].filter(({callback: cb}) => callback === cb).forEach(({ipcListener}) => {
-      ipcRenderer.off(event, ipcListener);
-      // FIXME remove from registry
-    });
+    REGISTERED_EVENTS[event]
+      .filter(({callback: cb}) => callback === cb)
+      .forEach(({ipcListener}) => {
+        ipcRenderer.off(event, ipcListener);
+        // FIXME remove from registry
+      });
   },
 };
 
