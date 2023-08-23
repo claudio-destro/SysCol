@@ -12,7 +12,7 @@
       };
 
       const logCommandError = (lineno, response) => logCommandResponse(lineno, response, -1, "err");
-      const logTest = (lineno, response, passed, elapsed) => logCommandResponse(lineno, response, elapsed, passed ? "pass": " fail");
+      const logTest = (lineno, response, passed, elapsed) => logCommandResponse(lineno, response, elapsed, passed ? "pass": "fail");
 
       const logCommandResponse = (lineno, response, elapsed, status) => {
         const row = document.createElement("p");
