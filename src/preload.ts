@@ -11,6 +11,7 @@ type RegisteredEventMap = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const REGISTERED_EVENTS: RegisteredEventMap = {
+  clearLogs: [], // unused
   setScriptFileName: [], // unused
   error: [],
   message: [],

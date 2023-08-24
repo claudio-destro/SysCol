@@ -51,8 +51,6 @@
         log.innerHTML = "";
       }
 
-      const executeScript = () => SysCol.executeScript();
-
       const setScriptFileName = (file) => document.title = `SysCol - ${file}`;
 
     </script>
@@ -60,12 +58,9 @@
 <body>
 <div id="sys_col">
     <main id="sys_col_log"></main>
-    <footer id="sys_col_bar">
-        <button type="button" onclick="executeScript()">Execute</button>
-        <button type="button" onclick="clearLogs()">Clear</button>
-    </footer>
 </div>
 <script>
+  SysCol.registerEventListener("clearLogs", clearLogs);
   SysCol.registerEventListener("setScriptFileName", setScriptFileName);
   SysCol.registerEventListener("error", logError);
   SysCol.registerEventListener("message", logMessage);

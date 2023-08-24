@@ -1,7 +1,9 @@
-import {app, BrowserWindow, dialog, ipcMain, Menu} from "electron";
+import {app, BrowserWindow, ipcMain} from "electron";
 import {platform} from "node:process";
 import {loadSettings, saveSettings} from "./settings";
-import {executeScript, loadScript, reloadScript} from "./scripts";
+import {executeScript} from "./scripts";
+import {createMenu} from "./menu";
+import {IpcMainEvent, IpcMainEventListenerMap} from "./IpcEvents";
 import {createWindow} from "./createWindow";
 
 const isMac = platform === "darwin";
@@ -13,10 +15,8 @@ if (require("electron-squirrel-startup")) {
 }
 
 app.setName("SysCol");
-
 app.on("ready", loadSettings);
 app.on("before-quit", saveSettings);
-
 app.on("window-all-closed", () => {
   if (!isMac) app.quit();
 });
@@ -29,54 +29,13 @@ app.on("activate", async () => {
   }
 });
 
-ipcMain.on("executeScript", async () => executeScript(BrowserWindow.getFocusedWindow()));
+const registerIpcMainListener = <E extends IpcMainEvent>(event: E, listener: IpcMainEventListenerMap[E]): void => {
+  ipcMain.on(event, listener);
+};
 
-const menu = Menu.buildFromTemplate([
-  {role: "appMenu"},
-  {
-    label: "File",
-    role: "fileMenu",
-    submenu: [
-      {
-        label: "New window",
-        accelerator: "CommandOrControl+N",
-        click: () => createWindow(),
-      },
-      {
-        label: "Open script",
-        accelerator: "CommandOrControl+O",
-        click: async () => {
-          const window = BrowserWindow.getFocusedWindow();
-          const result = await dialog.showOpenDialog(window, {
-            title: "Choose test script",
-            properties: ["openFile"],
-            filters: [{name: "Script", extensions: ["tst", "txt"]}],
-          });
-          if (!result.canceled) {
-            await loadScript(result.filePaths[0], window);
-          }
-        },
-      },
-      isMac ? {role: "close"} : {role: "quit"},
-    ],
-  },
-  {role: "editMenu"},
-  {
-    label: "Script",
-    submenu: [
-      {
-        label: "Reload / Run",
-        accelerator: "CommandOrControl+R",
-        click: async () => {
-          const window = BrowserWindow.getFocusedWindow();
-          window.webContents.once("did-finish-load", () => reloadScript(window).then(() => executeScript(window)));
-          window.reload();
-        },
-      },
-    ],
-  },
-  {role: "windowMenu"},
-  {role: "help"},
-]);
+registerIpcMainListener("executeScript", async () => {
+  const window: BrowserWindow | null = BrowserWindow.getFocusedWindow();
+  if (window) return executeScript(window);
+});
 
-Menu.setApplicationMenu(menu);
+createMenu();
