@@ -1,4 +1,4 @@
-import {parseCommand} from "../../script/parseCommand";
+import {parseCommand} from "../../script/protocol/parseCommand";
 
 describe("parseCommand", () => {
   test('should parse "ver"', () => expect(parseCommand(" ver ?")).toEqual(["ver", "?"]));

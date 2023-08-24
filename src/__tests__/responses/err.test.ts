@@ -1,4 +1,4 @@
-import {parseCommandResponse, wasCommandMalformed} from "../../script/parseCommandResponse";
+import {parseCommandResponse, wasCommandMalformed} from "../../script/protocol/parseCommandResponse";
 
 describe("Tests malformed", () => {
   test('"TST" should be malformed', () => expect(wasCommandMalformed(parseCommandResponse("{SC,TST,7.1.??,x,ERR}\n")[1])).toBeTruthy());

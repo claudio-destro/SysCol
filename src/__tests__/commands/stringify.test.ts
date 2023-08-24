@@ -1,4 +1,4 @@
-import {stringifyHardwareCommand} from "../../script/stringifyHardwareCommand";
+import {stringifyHardwareCommand} from "../../script/protocol/stringifyHardwareCommand";
 
 describe("stringifyHardwareCommand", () => {
   test('should stringify "ver"', () => expect(stringifyHardwareCommand("ver", "?")).toEqual("{sc,ver,?}"));

@@ -1,5 +1,5 @@
-import {parseCommandResponse} from "../../script/parseCommandResponse";
-import {isTestPassed} from "../../script/getTestResult";
+import {parseCommandResponse} from "../../script/protocol/parseCommandResponse";
+import {isTestPassed} from "../../script/protocol/getTestResult";
 
 describe("Tests passed", () => {
   test('"TST" should pass', () => expect(isTestPassed(parseCommandResponse("{SC,TST,7.0.1:PASS}\n")[1])).toBeTruthy());
