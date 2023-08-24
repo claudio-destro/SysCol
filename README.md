@@ -33,15 +33,18 @@ A command has the following format:
 {sc, xxx, yyyy1, ... zzzzN}
 ```
 
-- start with `"{sc,"` (`sc` is for SysCol)
-- end with `"}"`
+- starts with `"{sc,"` (`sc` stands for SysCol)
+- ends with `"}"`
 - `xxx` is the 3-letter command code lowercase
 - `y` is the first parameter
 - `z` is the Nth parameter
 
 ### Response
 
-A response has the same format of the command, except it is all uppercase.
+A response has the same format of the command, except
+
+- it is all uppercase.
+- ends with `"}\r\n"`
 
 ### Macro
 
