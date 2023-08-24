@@ -1,6 +1,6 @@
 # SysCol
 
-Read and execute simple test scripts using [Node SerialPort](https://serialport.io), based on [Electron](https://www.electronjs.org).
+Read and execute simple test scripts using [Node SerialPort](https://serialport.io) and [Electron](https://www.electronjs.org).
 
 ## Getting Started
 
@@ -8,14 +8,23 @@ Pre-requisites:
 
 - [Node.js](https://nodejs.org/)
 
-```bash
+Clone the repository:
+
+```shell
+git clone https://github.com/claudio-destro/SysCol
+cd SysCol
+```
+
+Then install and start it:
+
+```shell
 npm install
 npm start
 ```
 
 ## Packaging
 
-```bash
+```shell
 npm run make
 ```
 
