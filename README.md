@@ -39,7 +39,7 @@ Eventually, the final distributable ZIP will be in
 
 `out/make/zip/[PLATFORM]/[ARCH]/SysCol-[PLATFORM]-[ARCH]-[VERSION].zip`
 
-## Communication Protocol
+## Communication Protocol and Commands
 
 ### Command
 
