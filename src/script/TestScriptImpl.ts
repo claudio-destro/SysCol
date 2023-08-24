@@ -14,10 +14,6 @@ import {TestScriptEvent, TestScriptListenerMap, TestScriptListeners} from "./Tes
 
 const hrtimeToMicroseconds = ([n, m]: [number, number]): number => n * 1000000 + m / 1000;
 
-/* eslint default-case: "off" */
-
-/* eslint no-continue: "off" */
-
 export class TestScriptImpl implements TestScript {
   #events = new EventEmitter();
   #data: Array<string>;
@@ -58,22 +54,21 @@ export class TestScriptImpl implements TestScript {
     this.#emit("message", new Date().toISOString());
     try {
       for await (const {response, elapsed} of this.#executeSingleCommand()) {
-        const [cmd, params] = parseCommandResponse(response);
+        const [, params] = parseCommandResponse(response);
         if (wasCommandMalformed(params)) {
           this.#emit("commandError", response);
           continue;
         }
-        if (cmd === "tst") {
-          const {result} = getTestResult(params);
-          switch (result) {
-            case "FAIL":
-            case "PASS":
-              this.#emit("test", response, result === "PASS", elapsed);
-              continue;
-          }
-          // fallthrough
+        const {result} = getTestResult(params);
+        switch (result) {
+          case "FAIL":
+          case "PASS":
+            this.#emit("test", response, result === "PASS", elapsed);
+            break;
+          default:
+            this.#emit("response", response, elapsed);
+            break;
         }
-        this.#emit("response", response, elapsed);
       }
     } catch (err) {
       this.#emit("error", err);
