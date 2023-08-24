@@ -161,7 +161,7 @@ export class TestScriptImpl implements TestScript {
       const id = setTimeout(() => {
         this.#serialPortReader?.off("data", onData);
         this.#serialPortReader?.off("error", onError);
-        reject(new RangeError(`"${cmd}" timed out after ${this.#commandTimeout}ms`));
+        reject(new RangeError(`"${cmd}" timed out after ${timeout}ms`));
       }, timeout);
 
       this.#serialPortReader?.once("data", onData);
