@@ -1,7 +1,10 @@
 import {parseCommandResponse} from "../../script/protocol/parseCommandResponse";
 
 describe("parseCommandResponse", () => {
+  test('"VER" should not throw', () => expect(() => parseCommandResponse("{SC,VER,FWSC:1.4 HWSC:1.2 HWRM:1.3}")).not.toThrow());
+  test('"VER" should not throw', () => expect(() => parseCommandResponse("{SC,VER,FWSC:1.4 HWSC:1.2 HWRM:1.3}\r")).not.toThrow());
   test('"VER" should not throw', () => expect(() => parseCommandResponse("{SC,VER,FWSC:1.4 HWSC:1.2 HWRM:1.3}\n")).not.toThrow());
+  test('"VER" should not throw', () => expect(() => parseCommandResponse("{SC,VER,FWSC:1.4 HWSC:1.2 HWRM:1.3}\r\n")).not.toThrow());
   test('"TST" should not throw', () => expect(() => parseCommandResponse("{SC,TST,7.0.1:PASS}\n")).not.toThrow());
   test('"TST" should not throw', () => expect(() => parseCommandResponse("{SC,TST,7.0.0:PASS}\n")).not.toThrow());
   test('"TST" should not throw', () => expect(() => parseCommandResponse("{SC,TST,7.0.1:PASS}\n")).not.toThrow());

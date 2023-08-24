@@ -71,9 +71,10 @@ export class TestScriptImpl implements TestScript {
         }
       }
     } catch (err) {
+      console.error("Error", err);
       this.#emit("error", err);
     } finally {
-      this.#serialPort?.close(console.error);
+      this.#serialPort?.close();
       this.#serialPortReader?.destroy();
       this.#serialPortReader = null;
       this.#serialPort = null;
@@ -107,7 +108,12 @@ export class TestScriptImpl implements TestScript {
           case "open":
             this.#serialPort?.close();
             this.#serialPort = await openSerialPort(args[0], args[1]);
-            this.#serialPortReader = this.#serialPort.pipe(new ReadlineParser());
+            this.#serialPortReader = this.#serialPort.pipe(
+              new ReadlineParser({
+                includeDelimiter: true,
+                delimiter: "}",
+              }),
+            );
             break;
           case "timeout":
             {
@@ -135,6 +141,8 @@ export class TestScriptImpl implements TestScript {
       const onData = (response: string | Buffer): void => {
         const endTime = hrtimeToMicroseconds(hrtime());
         // eslint-disable-next-line no-use-before-define
+        this.#serialPortReader?.off("error", onError);
+        // eslint-disable-next-line no-use-before-define
         clearTimeout(id);
         resolve({
           response: response.toString(),
@@ -142,18 +150,25 @@ export class TestScriptImpl implements TestScript {
         });
       };
 
+      const onError = (error: Error): void => {
+        // eslint-disable-next-line no-use-before-define
+        this.#serialPortReader?.off("data", onData);
+        // eslint-disable-next-line no-use-before-define
+        clearTimeout(id);
+        reject(error);
+      };
+
       const id = setTimeout(() => {
         this.#serialPortReader?.off("data", onData);
+        this.#serialPortReader?.off("error", onError);
         reject(new RangeError(`"${cmd}" timed out after ${this.#commandTimeout}ms`));
       }, timeout);
 
       this.#serialPortReader?.once("data", onData);
+      this.#serialPortReader?.once("error", onError);
 
-      this.#serialPort?.write(cmd, err => {
-        this.#serialPortReader?.off("data", onData);
-        clearTimeout(id);
-        reject(err);
-      });
+      this.#serialPort?.write(cmd);
+      this.#serialPort?.drain();
     });
   }
 }
