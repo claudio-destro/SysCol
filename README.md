@@ -7,28 +7,35 @@ Read and execute simple test scripts using [Node SerialPort](https://serialport.
 Pre-requisites:
 
 - [Node.js](https://nodejs.org/)
+- [git](https://git-scm.com) (optional)
 
-Clone the repository:
+Clone the repository using `git` and `cd` into it:
 
 ```shell
 git clone https://github.com/claudio-destro/SysCol
 cd SysCol
 ```
 
-Then install and start it:
+Alternatively
+
+1. download the ZIP
+2. unpack it
+3. `cd` into it
+
+Then install and start the project for local development:
 
 ```shell
 npm install
 npm start
 ```
 
-## Packaging
+## Packaging the application
 
 ```shell
 npm run make
 ```
 
-Eventually, the final zip will be in
+Eventually, the final distributable ZIP will be in
 
 `out/make/zip/[PLATFORM]/[ARCH]/SysCol-[PLATFORM]-[ARCH]-[VERSION].zip`
 
