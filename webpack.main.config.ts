@@ -18,4 +18,8 @@ export const mainConfig: Configuration = {
   node: {
     __dirname: true,
   },
+  externals: {
+    // XXX Node SerialPort must be externalized. See https://stackoverflow.com/questions/71930401/webpack-not-including-module-with-electron-forge-and-serialport for more.
+    serialport: true,
+  },
 };
