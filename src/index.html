@@ -35,7 +35,7 @@
       const logMessage = (lineno, message) => {
         const row = document.createElement("p");
         row.className = "sys_col_message sys_col_row";
-        row.innerText = message;
+        row.innerText = message || " ";
         appendRow(row);
       }
 
