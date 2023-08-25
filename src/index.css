@@ -106,12 +106,16 @@ html, body {
  */
 
 .sys_col_elapsed {
-  color: gray;
+  color: #808080;
   margin-left: auto;
 }
 
+.sys_col_elapsed:before {
+  content: "[";
+}
+
 .sys_col_elapsed:after {
-  content: "μs";
+  content: "μs]";
 }
 
 /*
