@@ -7,7 +7,7 @@ Read and execute simple test scripts using [Node SerialPort](https://serialport.
 Pre-requisites:
 
 - [Node.js](https://nodejs.org/)
-- [git](https://git-scm.com) (optional)
+- [git](https://git-scm.com)
 
 Clone the repository using `git` and `cd` into it:
 
@@ -29,7 +29,7 @@ npm install
 npm start
 ```
 
-## Packaging the application
+## Packaging the Application
 
 ```shell
 npm run make
