@@ -13,6 +13,5 @@
     "jsx",
     "json",
     "node"
-  ],
-  "verbose": true
+  ]
 }
