@@ -12,6 +12,7 @@ import {rendererConfig} from "./webpack.renderer.config";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const readPackageJson = async (_forgeConfig: ResolvedForgeConfig, packageJson: Record<string, any>): Promise<Record<string, any>> => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const {scripts, ...pkg} = packageJson;
   return pkg;
 };
