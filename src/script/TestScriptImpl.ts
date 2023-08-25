@@ -1,6 +1,4 @@
 import {hrtime} from "node:process";
-import {FileHandle, readFile} from "node:fs/promises";
-import {PathLike} from "node:fs";
 import {ReadlineParser, SerialPort} from "serialport";
 import {openSerialPort} from "./macros/openSerialPort";
 import {parseCommand} from "./protocol/parseCommand";
@@ -29,14 +27,6 @@ export class TestScriptImpl implements TestScript {
 
   get lineNumber(): number {
     return this.#currentLine;
-  }
-
-  static async fromFile(path: PathLike | FileHandle): Promise<TestScript> {
-    return new TestScriptImpl(await readFile(path));
-  }
-
-  static async fromBuffer(data: string | Buffer): Promise<TestScript> {
-    return new TestScriptImpl(data);
   }
 
   on<T extends TestScriptEvent>(event: T, listener: TestScriptListenerMap[T]): void {

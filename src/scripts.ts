@@ -1,8 +1,8 @@
-import {TestScriptImpl} from "./script/TestScriptImpl";
 import {BrowserWindow} from "electron";
 import {PathLike} from "node:fs";
 import {TestScript} from "./script/TestScript";
 import {TestScriptEvent, TestScriptListenerMap} from "./script/TestScriptEvents";
+import {TestScriptFactory} from "./script/TestScriptFactory";
 
 const SCRIPTS: Record<number, {file: PathLike; script: TestScript}> = {};
 
@@ -15,7 +15,7 @@ const makeTestScriptEventListenerFactory = (script: TestScript, window: BrowserW
 
 export const loadScript = async (file: PathLike, window: BrowserWindow) => {
   console.log(`Load script ${JSON.stringify(file)} into window "${window.id}"`);
-  const script = await TestScriptImpl.fromFile(file);
+  const script = await TestScriptFactory.fromFile(file);
   window.webContents.send("setScriptFileName", file);
   const makeTestScriptEventListener = makeTestScriptEventListenerFactory(script, window);
   script.on("error", makeTestScriptEventListener("error"));
