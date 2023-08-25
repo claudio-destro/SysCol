@@ -2,15 +2,16 @@ import {hrtime} from "node:process";
 import {FileHandle, readFile} from "node:fs/promises";
 import {PathLike} from "node:fs";
 import {ReadlineParser, SerialPort} from "serialport";
-import {openSerialPort} from "./openSerialPort";
+import {openSerialPort} from "./macros/openSerialPort";
 import {parseCommand} from "./protocol/parseCommand";
 import {parseCommandResponse, wasCommandMalformed} from "./protocol/parseCommandResponse";
-import {sleep} from "./sleep";
+import {sleep} from "./macros/sleep";
 import {stringifyHardwareCommand} from "./protocol/stringifyHardwareCommand";
 import {getTestResult} from "./protocol/getTestResult";
 import {TestScript} from "./TestScript";
 import EventEmitter from "node:events";
 import {TestScriptEvent, TestScriptListenerMap, TestScriptListeners} from "./TestScriptEvents";
+import {parseInterval} from "./macros/parseInterval";
 
 const hrtimeToMicroseconds = ([n, m]: [number, number]): number => n * 1000000 + m / 1000;
 
@@ -54,12 +55,12 @@ export class TestScriptImpl implements TestScript {
     this.#emit("message", new Date().toISOString());
     try {
       for await (const {response, elapsed} of this.#executeSingleCommand()) {
-        const [, params] = parseCommandResponse(response);
-        if (wasCommandMalformed(params)) {
+        const {argv} = parseCommandResponse(response);
+        if (wasCommandMalformed(argv)) {
           this.#emit("commandError", response);
           continue;
         }
-        const {result} = getTestResult(params);
+        const {result} = getTestResult(argv);
         switch (result) {
           case "FAIL":
           case "PASS":
@@ -97,17 +98,21 @@ export class TestScriptImpl implements TestScript {
     for (;;) {
       const row = this.#nextLine();
       if (row === null) return;
-      const [cmd, ...args] = parseCommand(row);
-      if (cmd.match(/^@/)) {
-        this.#emit("message", row);
-        switch (cmd.substring(1)) {
+      const {command, commandLine, argv} = parseCommand(row);
+      if (command.match(/^@/)) {
+        switch (command.substring(1)) {
+          case "echo":
+            this.#emit("message", commandLine);
+            break;
           case "close":
+            this.#emit("message", row);
             this.#serialPort?.close();
             this.#serialPort = null;
             break;
           case "open":
+            this.#emit("message", row);
             this.#serialPort?.close();
-            this.#serialPort = await openSerialPort(args[0], args[1]);
+            this.#serialPort = await openSerialPort(argv[0], argv[1]);
             this.#serialPortReader = this.#serialPort.pipe(
               new ReadlineParser({
                 includeDelimiter: true,
@@ -116,19 +121,18 @@ export class TestScriptImpl implements TestScript {
             );
             break;
           case "timeout":
-            {
-              const timeout = +args[0];
-              if (!isNaN(timeout)) this.#commandTimeout = timeout;
-            }
+            this.#commandTimeout = parseInterval(argv[0]);
+            this.#emit("message", row);
             break;
           case "wait":
-            await sleep(+args[0]);
+            await sleep(parseInterval(argv[0]));
+            this.#emit("message", row);
             break;
           default:
-            throw new SyntaxError(`Unrecognized command ${JSON.stringify(cmd)}`);
+            throw new SyntaxError(`Unrecognized command ${JSON.stringify(command)}`);
         }
       } else {
-        yield this.#sendCommandAndWaitResponse(stringifyHardwareCommand(cmd, ...args));
+        yield this.#sendCommandAndWaitResponse(stringifyHardwareCommand(command, ...argv));
       }
     }
   }

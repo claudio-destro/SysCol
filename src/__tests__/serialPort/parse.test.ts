@@ -1,4 +1,4 @@
-import {parseSerialPortOpenOptions} from "../../script/parseSerialPortOpenOptions";
+import {parseSerialPortOpenOptions} from "../../script/macros/parseSerialPortOpenOptions";
 
 describe("parseSerialPortOpenOptions", () => {
   test("should not throw", () => expect(() => parseSerialPortOpenOptions("9600-8-N-1")).not.toThrow());

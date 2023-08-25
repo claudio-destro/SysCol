@@ -1,13 +1,4 @@
-type SerialPortDataBits = 5 | 6 | 7 | 8;
-type SerialPortParity = "none" | "even" | "mark" | "odd" | "space";
-type SerialPortStopBits = 1 | 2;
-
-export type SerialPortOpenOptions = {
-  baudRate: number;
-  dataBits: SerialPortDataBits;
-  parity: SerialPortParity;
-  stopBit: SerialPortStopBits;
-};
+import {SerialPortDataBits, SerialPortOpenOptions, SerialPortParity, SerialPortStopBits} from "../SerialPortOpenOptions";
 
 // prettier-ignore
 type SerialPortParityShort<parity extends SerialPortParity> =

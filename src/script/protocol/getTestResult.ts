@@ -1,10 +1,8 @@
-export type TestResult = "FAIL" | "PASS";
+export type TestResult = {test?: string; result?: "FAIL" | "PASS"};
 
-export type TestOutcome = {test?: string; result?: TestResult};
-
-export const getTestResult = (params: Record<string, string>): TestOutcome => {
-  const outcome = Object.entries(params).filter(([, status]) => status.match(/FAIL|PASS/))[0] ?? [];
-  return {test: outcome[0], result: outcome[1] as TestResult};
+export const getTestResult = (argv: Record<string, string>): TestResult => {
+  const outcome = Object.entries(argv).filter(([, status]) => status.match(/FAIL|PASS/))[0] ?? [];
+  return {test: outcome[0], result: outcome[1] as "FAIL" | "PASS"};
 };
 
 export const isTestFailed = (params: Record<string, string>): boolean => getTestResult(params).result === "FAIL";
