@@ -102,7 +102,7 @@ export class TestScriptImpl implements TestScript {
       if (command.match(/^@/)) {
         switch (command.substring(1)) {
           case "echo":
-            this.#emit("message", commandLine ?? "");
+            this.#emit("message", commandLine);
             break;
           case "close":
             this.#emit("message", row);
@@ -124,10 +124,12 @@ export class TestScriptImpl implements TestScript {
             this.#commandTimeout = parseInterval(argv[0]);
             this.#emit("message", row);
             break;
-          case "wait":
-            await sleep(parseInterval(argv[0]));
+          case "wait": {
+            const interval = parseInterval(argv[0]);
             this.#emit("message", row);
+            await sleep(interval);
             break;
+          }
           default:
             throw new SyntaxError(`Unrecognized command ${JSON.stringify(command)}`);
         }
