@@ -16,7 +16,6 @@ const REGISTERED_EVENTS: RegisteredEventMap = {
   error: [],
   message: [],
   command: [],
-  commandError: [],
   response: [],
   test: [],
 };

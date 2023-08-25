@@ -2,11 +2,9 @@ export interface TestScriptListeners {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   error(error: any): void;
 
-  message(message: string): void;
+  message(type: "log" | "info" | "error", message: string): void;
 
   command(command: string): void;
-
-  commandError(command: string): void;
 
   response(response: string, elapsed: number): void;
 

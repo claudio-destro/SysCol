@@ -1,5 +1,5 @@
 import {hrtime} from "node:process";
-import {ReadlineParser, SerialPort} from "serialport";
+import {RegexParser, SerialPort} from "serialport";
 import {openSerialPort} from "./macros/openSerialPort";
 import {parseCommand} from "./protocol/parseCommand";
 import {parseCommandResponse, wasCommandMalformed} from "./protocol/parseCommandResponse";
@@ -19,7 +19,7 @@ export class TestScriptImpl implements TestScript {
   #currentLine = 0;
   #commandTimeout = 5000;
   #serialPort?: SerialPort | null;
-  #serialPortReader?: ReadlineParser | null;
+  #serialPortReader?: RegexParser | null;
 
   constructor(data: string | Buffer) {
     this.#data = data.toString().split(/\r\n|\r|\n/gm);
@@ -42,12 +42,12 @@ export class TestScriptImpl implements TestScript {
   }
 
   async executeScript() {
-    this.#emit("message", new Date().toISOString());
+    this.#emit("message", "info", new Date().toISOString());
     try {
       for await (const {response, elapsed} of this.#executeSingleCommand()) {
         const {argv} = parseCommandResponse(response);
         if (wasCommandMalformed(argv)) {
-          this.#emit("commandError", response);
+          this.#emit("message", "error", response);
           continue;
         }
         const {result} = getTestResult(argv);
@@ -92,31 +92,26 @@ export class TestScriptImpl implements TestScript {
       if (command.match(/^@/)) {
         switch (command.substring(1)) {
           case "echo":
-            this.#emit("message", commandLine);
+            this.#emit("message", "log", commandLine);
             break;
           case "close":
-            this.#emit("message", row);
+            this.#emit("message", "info", row);
             this.#serialPort?.close();
             this.#serialPort = null;
             break;
           case "open":
-            this.#emit("message", row);
+            this.#emit("message", "info", row);
             this.#serialPort?.close();
             this.#serialPort = await openSerialPort(argv[0], argv[1]);
-            this.#serialPortReader = this.#serialPort.pipe(
-              new ReadlineParser({
-                includeDelimiter: true,
-                delimiter: "}",
-              }),
-            );
+            this.#serialPortReader = this.#serialPort.pipe(new RegexParser({regex: /[\r\n]+/}));
             break;
           case "timeout":
             this.#commandTimeout = parseInterval(argv[0]);
-            this.#emit("message", row);
+            this.#emit("message", "info", row);
             break;
           case "wait": {
             const interval = parseInterval(argv[0]);
-            this.#emit("message", row);
+            this.#emit("message", "info", row);
             await sleep(interval);
             break;
           }

@@ -11,15 +11,13 @@
         appendRow(row);
       };
 
-      const logCommandError = (lineno, response) => logCommandResponse(lineno, response, -1, "err");
       const logTest = (lineno, response, passed, elapsed) => logCommandResponse(lineno, response, elapsed, passed ? "pass": "fail");
 
       const logCommandResponse = (lineno, response, elapsed, status) => {
         const row = document.createElement("p");
         row.className = "sys_col_response sys_col_row";
-        row.classList.toggle("pass", status === "pass");
-        row.classList.toggle("fail", status === "fail");
-        row.classList.toggle("err", status === "err");
+        row.classList.toggle("test_pass", status === "pass");
+        row.classList.toggle("test_fail", status === "fail");
         const body = document.createElement("span");
         body.innerText = response.toString().trim();
         row.appendChild(body);
@@ -32,14 +30,15 @@
         appendRow(row);
       }
 
-      const logMessage = (lineno, message) => {
+      const logMessage = (lineno, type, message) => {
         const row = document.createElement("p");
-        row.className = "sys_col_message sys_col_row";
-        row.innerText = message || " ";
+        row.className = `sys_col_message sys_col_row ${type}`;
+        if (message) row.innerText = message.trim()
+        else row.innerHTML = "&nbsp;";
         appendRow(row);
       }
 
-      const logError = (lineno, err) => logMessage(lineno, `Error at line ${lineno}: ${err}`);
+      const logError = (lineno, err) => logMessage(lineno, "error", `Error at line ${lineno}: ${err}`);
 
       const appendRow = row => {
         const log = document.getElementById("sys_col_log");
@@ -65,7 +64,6 @@
   SysCol.registerEventListener("error", logError);
   SysCol.registerEventListener("message", logMessage);
   SysCol.registerEventListener("command", logCommand);
-  SysCol.registerEventListener("commandError", logCommandError);
   SysCol.registerEventListener("response", logCommandResponse);
   SysCol.registerEventListener("test", logTest);
 </script>

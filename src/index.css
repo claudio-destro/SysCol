@@ -73,7 +73,7 @@ html, body {
 }
 
 .sys_col_response.fail,
-.sys_col_response.err {
+.sys_col_message.error {
 }
 
 /*
@@ -99,6 +99,21 @@ html, body {
   content: " ";
   display: inline-block;
   width: 1em;
+}
+
+.sys_col_message.log:before {
+  content: " ";
+}
+
+.sys_col_message.info:before {
+  font-weight: bold;
+  content: "i";
+}
+
+.sys_col_message.error:before {
+  font-weight: bold;
+  color: #800000;
+  content: "?";
 }
 
 /*
@@ -151,13 +166,17 @@ html, body {
     color: #000000;
   }
 
-  .sys_col_response.pass {
+  .sys_col_response.test_pass {
     color: #008000;
   }
 
-  .sys_col_response.fail,
-  .sys_col_response.err {
+  .sys_col_response.test_fail,
+  .sys_col_message.error {
     color: #800000;
+  }
+
+  .sys_col_message.info:before {
+    color: #000000;
   }
 }
 
@@ -190,12 +209,16 @@ html, body {
     color: #CCCCCC;
   }
 
-  .sys_col_response.pass {
+  .sys_col_response.test_pass {
     color: #00CC00;
   }
 
-  .sys_col_response.fail,
-  .sys_col_response.err {
+  .sys_col_response.test_fail,
+  .sys_col_message.error {
     color: #CC0000;
+  }
+
+  .sys_col_message.info:before {
+    color: #E0E0E0;
   }
 }

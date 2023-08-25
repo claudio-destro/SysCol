@@ -21,7 +21,6 @@ export const loadScript = async (file: PathLike, window: BrowserWindow) => {
   script.on("error", makeTestScriptEventListener("error"));
   script.on("message", makeTestScriptEventListener("message"));
   script.on("command", makeTestScriptEventListener("command"));
-  script.on("commandError", makeTestScriptEventListener("commandError"));
   script.on("response", makeTestScriptEventListener("response"));
   script.on("test", makeTestScriptEventListener("test"));
   window.on("closed", () => delete SCRIPTS[window.id]);
