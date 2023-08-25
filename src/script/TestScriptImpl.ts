@@ -102,7 +102,7 @@ export class TestScriptImpl implements TestScript {
       if (command.match(/^@/)) {
         switch (command.substring(1)) {
           case "echo":
-            this.#emit("message", commandLine);
+            this.#emit("message", commandLine ?? "");
             break;
           case "close":
             this.#emit("message", row);
