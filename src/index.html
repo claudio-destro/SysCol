@@ -59,7 +59,7 @@
 
       const logError = (lineno, err) => {
         logMessage(lineno, "error", `Error at line ${lineno}: ${err}`);
-        logRunning(false);
+        logStatus(`Error at line ${lineno}`);
       }
 
       const appendRow = row => {
