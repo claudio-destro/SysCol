@@ -10,4 +10,7 @@ declare global {
   export interface Window {
     SysCol: SysColApi;
   }
+
+  // eslint-disable-next-line no-var
+  var SysCol: SysColApi;
 }

@@ -4,6 +4,15 @@
     <meta charset="UTF-8"/>
     <title>SysCol - [no script]</title>
     <script type="application/javascript">
+      const microsecondsToInstant = time => {
+        if (time < 1) return "";
+        if (time < 1000) return `[${time.toFixed(0)}μs]`;
+        time /= 1000;
+        if (time < 1000) return `[${time.toFixed(0)}ms]`;
+        time /= 1000;
+        return `[${time.toFixed(1)}s]`;
+      }
+
       const logCommand = (_lineno, command) => {
         const row = document.createElement("p");
         row.className = "sys_col_command sys_col_row";
@@ -14,6 +23,7 @@
       const logTest = (lineno, response, passed, elapsed) => logCommandResponse(lineno, response, elapsed, passed ? "pass": "fail");
 
       const logCommandResponse = (lineno, response, elapsed, status) => {
+        elapsed = microsecondsToInstant(elapsed);
         const row = document.createElement("p");
         row.className = "sys_col_response sys_col_row";
         row.classList.toggle("test_pass", status === "pass");
@@ -21,19 +31,18 @@
         const body = document.createElement("span");
         body.innerText = response.toString().trim();
         row.appendChild(body);
-        if (elapsed > 0) {
-          const lap = document.createElement("span");
-          lap.className = "sys_col_elapsed";
-          lap.innerText = elapsed.toFixed(0);
-          row.appendChild(lap);
-        }
+        const lap = document.createElement("span");
+        lap.className = "sys_col_elapsed";
+        lap.innerText = elapsed;
+        row.appendChild(lap);
         appendRow(row);
       }
 
       const logMessage = (lineno, type, message) => {
+        message = (message ?? "").trim()
         const row = document.createElement("p");
         row.className = `sys_col_message sys_col_row ${type}`;
-        if (message) row.innerText = message.trim()
+        if (message) row.innerText = message;
         else row.innerHTML = "&nbsp;";
         appendRow(row);
       }

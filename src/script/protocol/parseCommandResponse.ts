@@ -21,14 +21,12 @@ export const parseCommandResponse = (str: string): CommandResponse => {
   if (str) {
     const m = /\{SC,([A-Z]{3})([^}]*)}/.exec(str);
     if (m?.length >= 1) {
-      return {
-        command: m[1].toLowerCase(),
-        commandLine: m[2],
-        argv: parseArguments(m[2]),
-      };
+      const command = m[1].toLowerCase();
+      const commandLine = m[2];
+      const argv = parseArguments(commandLine);
+      const error = "ERR" in argv;
+      return {command, commandLine, argv, error};
     }
   }
   throw new SyntaxError(`Unrecognized response ${JSON.stringify(str)}`);
 };
-
-export const wasCommandMalformed = (params: Record<string, string>): boolean => "ERR" in params;

@@ -2,7 +2,7 @@ import {hrtime} from "node:process";
 import {RegexParser, SerialPort} from "serialport";
 import {openSerialPort} from "./macros/openSerialPort";
 import {parseCommand} from "./protocol/parseCommand";
-import {parseCommandResponse, wasCommandMalformed} from "./protocol/parseCommandResponse";
+import {parseCommandResponse} from "./protocol/parseCommandResponse";
 import {sleep} from "./macros/sleep";
 import {stringifyHardwareCommand} from "./protocol/stringifyHardwareCommand";
 import {getTestResult} from "./protocol/getTestResult";
@@ -45,8 +45,8 @@ export class TestScriptImpl implements TestScript {
     this.#emit("message", "info", new Date().toISOString());
     try {
       for await (const {response, elapsed} of this.#executeSingleCommand()) {
-        const {argv} = parseCommandResponse(response);
-        if (wasCommandMalformed(argv)) {
+        const {argv, error} = parseCommandResponse(response);
+        if (error) {
           this.#emit("message", "error", response);
           continue;
         }

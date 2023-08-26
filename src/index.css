@@ -125,14 +125,6 @@ html, body {
   margin-left: auto;
 }
 
-.sys_col_elapsed:before {
-  content: "[";
-}
-
-.sys_col_elapsed:after {
-  content: "μs]";
-}
-
 /*
  * COLOR SCHEMES
  */
@@ -176,7 +168,7 @@ html, body {
   }
 
   .sys_col_message.info:before {
-    color: #000000;
+    color: #0000FF;
   }
 }
 
