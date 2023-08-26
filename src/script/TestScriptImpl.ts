@@ -1,3 +1,4 @@
+import {PathLike} from "node:fs";
 import {hrtime} from "node:process";
 import {RegexParser, SerialPort} from "serialport";
 import {openSerialPort} from "./macros/openSerialPort";
@@ -10,19 +11,28 @@ import {TestScript} from "./TestScript";
 import EventEmitter from "node:events";
 import {TestScriptEvent, TestScriptListenerMap, TestScriptListeners} from "./TestScriptEvents";
 import {parseInterval} from "./macros/parseInterval";
+import {openLogFile} from "./macros/openLogFile";
+import {LogFile} from "./LogFile";
 
 const hrtimeToMicroseconds = ([n, m]: [number, number]): number => n * 1000000 + m / 1000;
 
 export class TestScriptImpl implements TestScript {
   #events = new EventEmitter();
+  #path?: PathLike | null;
   #data: Array<string>;
   #currentLine = 0;
   #commandTimeout = 5000;
   #serialPort?: SerialPort | null;
   #serialPortReader?: RegexParser | null;
+  #logFileWriter?: LogFile | null;
 
-  constructor(data: string | Buffer) {
+  constructor(path: PathLike | null, data: string | Buffer) {
+    this.#path = path;
     this.#data = data.toString().split(/\r\n|\r|\n/gm);
+  }
+
+  get filePath(): PathLike | null {
+    return this.#path;
   }
 
   get lineNumber(): number {
@@ -34,15 +44,15 @@ export class TestScriptImpl implements TestScript {
   }
 
   once<T extends TestScriptEvent>(event: T, listener: TestScriptListenerMap[T]): void {
-    this.#events.on(event, listener);
+    this.#events.once(event, listener);
   }
 
   off<T extends TestScriptEvent>(event: T, listener?: TestScriptListenerMap[T]): void {
-    this.#events.on(event, listener);
+    this.#events.off(event, listener);
   }
 
   async executeScript() {
-    this.#emit("message", "info", new Date().toISOString());
+    this.#emit("start");
     try {
       for await (const {response, elapsed} of this.#executeSingleCommand()) {
         const {argv, error} = parseCommandResponse(response);
@@ -65,10 +75,13 @@ export class TestScriptImpl implements TestScript {
       console.error("Error", err);
       this.#emit("error", err);
     } finally {
+      this.#emit("end");
       this.#serialPort?.close();
       this.#serialPortReader?.destroy();
-      this.#serialPortReader = null;
+      this.#logFileWriter?.close();
       this.#serialPort = null;
+      this.#serialPortReader = null;
+      this.#logFileWriter = null;
       this.#currentLine = 0;
     }
   }
@@ -94,12 +107,22 @@ export class TestScriptImpl implements TestScript {
           case "echo":
             this.#emit("message", "log", commandLine);
             break;
-          case "close":
+          case "close_log_file":
+            this.#emit("message", "info", row);
+            this.#logFileWriter?.close();
+            this.#logFileWriter = null;
+            break;
+          case "close_serial_port":
             this.#emit("message", "info", row);
             this.#serialPort?.close();
             this.#serialPort = null;
             break;
-          case "open":
+          case "open_log_file":
+            this.#emit("message", "info", row);
+            this.#logFileWriter = await openLogFile(this, argv[0]);
+            this.#emit("message", "info", this.#logFileWriter.path);
+            break;
+          case "open_serial_port":
             this.#emit("message", "info", row);
             this.#serialPort?.close();
             this.#serialPort = await openSerialPort(argv[0], argv[1]);

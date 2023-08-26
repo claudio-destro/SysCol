@@ -5,10 +5,14 @@ import {TestScriptImpl} from "./TestScriptImpl";
 
 export class TestScriptFactory {
   static async fromFile(path: PathLike | FileHandle): Promise<TestScript> {
-    return new TestScriptImpl(await readFile(path));
+    if (typeof path === "string" || path instanceof Buffer || path instanceof URL) {
+      return new TestScriptImpl(path, await readFile(path));
+    }
+    // FileHandle
+    return new TestScriptImpl(null, await readFile(path));
   }
 
   static async fromBuffer(data: string | Buffer): Promise<TestScript> {
-    return new TestScriptImpl(data);
+    return new TestScriptImpl(null, data);
   }
 }

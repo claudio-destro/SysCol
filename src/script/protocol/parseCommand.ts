@@ -14,7 +14,7 @@ const parseArguments = (args: string): Array<string> => {
 
 export const parseCommand = (str: string): Command => {
   if (str) {
-    const m = /^\s*([a-z]{3}|@[a-z]+)(\s*[, ].*)?$/i.exec(str);
+    const m = /^\s*([a-z]{3}|@[a-z_]+)(\s*[, ].*)?$/i.exec(str);
     if (m?.length >= 1) {
       return {
         command: m[1].toLowerCase(),
