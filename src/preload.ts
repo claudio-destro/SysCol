@@ -18,6 +18,8 @@ const REGISTERED_EVENTS: RegisteredEventMap = {
   command: [],
   response: [],
   test: [],
+  start: [],
+  end: [],
 };
 
 const SYS_COL_API: SysColApi = {

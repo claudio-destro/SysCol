@@ -4,6 +4,8 @@
     <meta charset="UTF-8"/>
     <title>SysCol - [no script]</title>
     <script type="application/javascript">
+      const tests = {pass: 0, fail: 0};
+
       const microsecondsToInstant = time => {
         if (time < 1) return "";
         if (time < 1000) return `[${time.toFixed(0)}μs]`;
@@ -20,7 +22,11 @@
         appendRow(row);
       };
 
-      const logTest = (lineno, response, passed, elapsed) => logCommandResponse(lineno, response, elapsed, passed ? "pass": "fail");
+      const logTest = (lineno, response, passed, elapsed) => {
+        const status = passed ? "pass" : "fail";
+        logCommandResponse(lineno, response, elapsed, status);
+        tests[status]++;
+      }
 
       const logCommandResponse = (lineno, response, elapsed, status) => {
         elapsed = microsecondsToInstant(elapsed);
@@ -47,7 +53,14 @@
         appendRow(row);
       }
 
-      const logError = (lineno, err) => logMessage(lineno, "error", `Error at line ${lineno}: ${err}`);
+      const logStatus = status => {
+        document.querySelectorAll("#sys_col_bar .sys_col_status").forEach(e => e.innerText = status);
+      };
+
+      const logError = (lineno, err) => {
+        logMessage(lineno, "error", `Error at line ${lineno}: ${err}`);
+        logRunning(false);
+      }
 
       const appendRow = row => {
         const log = document.getElementById("sys_col_log");
@@ -66,6 +79,9 @@
 <body>
 <div id="sys_col">
     <main id="sys_col_log"></main>
+    <footer id="sys_col_bar">
+        <p class="sys_col_status"></p>
+    </footer>
 </div>
 <script>
   SysCol.registerEventListener("clearLogs", clearLogs);
@@ -75,6 +91,8 @@
   SysCol.registerEventListener("command", logCommand);
   SysCol.registerEventListener("response", logCommandResponse);
   SysCol.registerEventListener("test", logTest);
+  SysCol.registerEventListener("start", () => logStatus("Running..."));
+  SysCol.registerEventListener("end", () => logStatus(`Tests: ${tests.pass} passed, ${tests.pass + tests.fail} total`));
 </script>
 </body>
 </html>
