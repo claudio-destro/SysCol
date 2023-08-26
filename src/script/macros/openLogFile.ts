@@ -28,9 +28,9 @@ const instant = (microseconds: number): string => `[${(microseconds / 1000).toFi
 export const openLogFile = async (script: TestScript, logFile: string): Promise<LogFile> => {
   const {filePath: basePath} = script;
   const basedir = typeof basePath === "string" || basePath instanceof Buffer ? dirname(basePath.toString()) : app.getPath("logs");
-  const path = resolve(basedir, mungeFileName(logFile))
+  const path = resolve(basedir, mungeFileName(logFile));
   const writer = createWriteStream(path);
-  
+
   const onCommand = (command: string) => writer.write(`${prefix("<<")} ${command}\r\n`);
   const onResponse = (response: string, elapsed: number) => writer.write(`${prefix(">>")} ${response} ${instant(elapsed)}\r\n`);
   const onTest = (response: string, passed: boolean, elapsed: number) => writer.write(`${prefix(passed ? "PASS" : "FAIL")} ${response} ${instant(elapsed)}\r\n`);
@@ -51,7 +51,7 @@ export const openLogFile = async (script: TestScript, logFile: string): Promise<
     script.off("command", onCommand);
     script.off("response", onResponse);
     script.off("test", onTest);
-  }
+  };
 
   return {
     path,
