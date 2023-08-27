@@ -6,7 +6,6 @@ import {spawn} from "node:child_process";
 
 import {mainConfig} from "./webpack.main.config";
 import {rendererConfig} from "./webpack.renderer.config";
-import MakerWix from "@electron-forge/maker-wix";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const readPackageJson = async (_forgeConfig: ResolvedForgeConfig, packageJson: Record<string, any>): Promise<Record<string, any>> => {
@@ -44,7 +43,7 @@ const config: ForgeConfig = {
     asar: true,
   },
   rebuildConfig: {},
-  makers: [new MakerZIP({}, ["darwin"]), new MakerWix({}, ["win32"])],
+  makers: [new MakerZIP({}, ["darwin", "win32"])],
   plugins: [
     new AutoUnpackNativesPlugin({}),
     new WebpackPlugin({
