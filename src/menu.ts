@@ -2,6 +2,7 @@ import {app, BrowserWindow, dialog, Menu} from "electron";
 import {platform} from "node:process";
 import {executeScript, loadScript, reloadScript} from "./scripts";
 import {createWindow} from "./createWindow";
+import MenuItemConstructorOptions = Electron.MenuItemConstructorOptions;
 
 const isMac = platform === "darwin";
 
@@ -22,16 +23,15 @@ const reloadAndExecuteScript = (window?: BrowserWindow | null): void => {
   }
 };
 
-const clearLogs = (window: BrowserWindow | null): void => window?.webContents.send("clearLogs");
+// const clearLogs = (window: BrowserWindow | null): void => window?.webContents.send("clearLogs");
 
-const menu = Menu.buildFromTemplate([
-  {role: "appMenu"},
+const template: Array<MenuItemConstructorOptions> = [
   {
     role: "fileMenu",
     submenu: [
       {
         id: "newScript",
-        label: "New Script",
+        label: "New Window",
         accelerator: "CommandOrControl+N",
         click: () => loadScriptAndOpenWindowIfNecessary(),
       },
@@ -44,6 +44,7 @@ const menu = Menu.buildFromTemplate([
       isMac ? {role: "close"} : {role: "quit"},
     ],
   },
+  {role:"editMenu"},
   {
     label: "Script",
     submenu: [
@@ -53,22 +54,24 @@ const menu = Menu.buildFromTemplate([
         accelerator: "CommandOrControl+R",
         click: () => reloadAndExecuteScript(BrowserWindow.getFocusedWindow()),
       },
-      {
-        id: "clearLogs",
-        label: "Clear",
-        accelerator: isMac ? "Command+K" : "Control+L",
-        click: () => clearLogs(BrowserWindow.getFocusedWindow()),
-      },
+      // {
+      //   id: "clearLogs",
+      //   label: "Clear",
+      //   accelerator: isMac ? "Command+K" : "Control+L",
+      //   click: () => clearLogs(BrowserWindow.getFocusedWindow()),
+      // },
     ],
   },
   {role: "windowMenu"},
-  {role: "help"},
-]);
+];
 
+if (isMac) template.unshift({role: "appMenu"});
+
+const menu = Menu.buildFromTemplate(template);
 export const createMenu = (): void => Menu.setApplicationMenu(menu);
 
 const setMenuItemsEnabled = (enabled: boolean): void => {
-  menu.getMenuItemById("clearLogs").enabled = enabled;
+  // menu.getMenuItemById("clearLogs").enabled = enabled;
   menu.getMenuItemById("executeScript").enabled = enabled;
   menu.getMenuItemById("openScript").enabled = enabled;
 };

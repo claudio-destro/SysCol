@@ -125,8 +125,7 @@ html, body {
  */
 
 .sys_col_elapsed {
-  color: #808080;
-  margin-left: auto;
+  margin-left: 1em;
 }
 
 /*
@@ -174,6 +173,10 @@ html, body {
   .sys_col_message.info:before {
     color: #0000FF;
   }
+
+  .sys_col_elapsed {
+    color: #E0E0E0;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -216,5 +219,9 @@ html, body {
 
   .sys_col_message.info:before {
     color: #E0E0E0;
+  }
+
+  .sys_col_elapsed {
+    color: #808080;
   }
 }
