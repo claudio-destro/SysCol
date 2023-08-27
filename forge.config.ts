@@ -1,14 +1,12 @@
 import type {ForgeConfig, ResolvedForgeConfig} from "@electron-forge/shared-types";
-import {MakerSquirrel} from "@electron-forge/maker-squirrel";
 import {MakerZIP} from "@electron-forge/maker-zip";
-import {MakerDeb} from "@electron-forge/maker-deb";
-import {MakerRpm} from "@electron-forge/maker-rpm";
 import {AutoUnpackNativesPlugin} from "@electron-forge/plugin-auto-unpack-natives";
 import {WebpackPlugin} from "@electron-forge/plugin-webpack";
 import {spawn} from "node:child_process";
 
 import {mainConfig} from "./webpack.main.config";
 import {rendererConfig} from "./webpack.renderer.config";
+import MakerWix from "@electron-forge/maker-wix";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const readPackageJson = async (_forgeConfig: ResolvedForgeConfig, packageJson: Record<string, any>): Promise<Record<string, any>> => {
@@ -46,7 +44,7 @@ const config: ForgeConfig = {
     asar: true,
   },
   rebuildConfig: {},
-  makers: [new MakerSquirrel({}), new MakerZIP({}, ["darwin", "win32"]), new MakerRpm({}), new MakerDeb({})],
+  makers: [new MakerZIP({}, ["darwin"]), new MakerWix({}, ["win32"])],
   plugins: [
     new AutoUnpackNativesPlugin({}),
     new WebpackPlugin({
