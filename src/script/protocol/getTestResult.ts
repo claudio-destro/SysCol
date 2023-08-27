@@ -1,10 +1,13 @@
-export type TestResult = {test?: string; result?: "FAIL" | "PASS"};
+import {CommandResponseArgument} from "../CommandResponse";
 
-export const getTestResult = (argv: Record<string, string>): TestResult => {
-  const outcome = Object.entries(argv).filter(([, status]) => status.match(/FAIL|PASS/))[0] ?? [];
-  return {test: outcome[0], result: outcome[1] as "FAIL" | "PASS"};
+type TestOutCome = "FAIL" | "PASS";
+export type TestResult = {test?: string; result?: TestOutCome};
+
+export const getTestResult = (argv: Array<CommandResponseArgument>): TestResult => {
+  const outcome = argv.filter(status => /FAIL|PASS/.test(status.value));
+  return outcome?.length === 1 ? {test: outcome[0].key, result: outcome[0].value as TestOutCome} : {};
 };
 
-export const isTestFailed = (params: Record<string, string>): boolean => getTestResult(params).result === "FAIL";
+export const isTestFailed = (params: Array<CommandResponseArgument>): boolean => getTestResult(params).result === "FAIL";
 
-export const isTestPassed = (params: Record<string, string>): boolean => getTestResult(params).result === "PASS";
+export const isTestPassed = (params: Array<CommandResponseArgument>): boolean => getTestResult(params).result === "PASS";

@@ -1,20 +1,20 @@
-import {CommandResponse} from "../CommandResponse";
+import {CommandResponse, CommandResponseArgument} from "../CommandResponse";
 
-const parseArgument = (arg: string): Record<string, string> => {
+const parseArgument = (arg: string): CommandResponseArgument => {
   const m = /^\s*([^:]*)(?::([^ ]+))?\s*$/.exec(arg);
-  if (m && m[1]) return {[m[1]]: m[2]}; // XXX Squash equal keys together
+  if (m && m[1]) return {key: m[1], value: m[2]};
   throw new SyntaxError(`Unrecognized parameter ${JSON.stringify(arg)}`);
 };
 
-const parseArguments = (args: string): Record<string, string> => {
-  const map: Record<string, string> = {};
+const parseArguments = (args: string): Array<CommandResponseArgument> => {
+  const values: Array<CommandResponseArgument> = [];
   // XXX Beware of commas and spaces in the following tricky regular expression
   for (const re = /\s*[, ]\s*([^:,]+(?::[^, ]+)?)/g; ; ) {
     const m = re.exec(args);
     if (!m) break;
-    Object.assign(map, parseArgument(m[1]));
+    values.push(parseArgument(m[1]));
   }
-  return map;
+  return values;
 };
 
 export const parseCommandResponse = (str: string): CommandResponse => {
@@ -24,7 +24,7 @@ export const parseCommandResponse = (str: string): CommandResponse => {
       const command = m[1].toLowerCase();
       const commandLine = m[2];
       const argv = parseArguments(commandLine);
-      const error = "ERR" in argv;
+      const error = argv.filter(arg => arg.key === "ERR").length >= 1;
       return {command, commandLine, argv, error};
     }
   }

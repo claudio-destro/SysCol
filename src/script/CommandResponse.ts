@@ -1,6 +1,8 @@
+export type CommandResponseArgument = {key: string; value?: string | null};
+
 export type CommandResponse = {
   command: string;
   commandLine: string;
-  argv: Record<string, string>;
+  argv: Array<CommandResponseArgument>;
   error: boolean;
 };
