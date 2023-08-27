@@ -44,7 +44,7 @@ const template: Array<MenuItemConstructorOptions> = [
       isMac ? {role: "close"} : {role: "quit"},
     ],
   },
-  {role:"editMenu"},
+  {role: "editMenu"},
   {
     label: "Script",
     submenu: [
