@@ -1,4 +1,4 @@
-import {parseInterval} from "../script/macros/parseInterval";
+import {parseInterval} from "../../script/macros/parseInterval";
 
 describe("parseInterval", () => {
   test("should not throw", () => expect(() => parseInterval("1 ")).not.toThrow());
