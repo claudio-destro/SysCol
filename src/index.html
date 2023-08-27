@@ -65,6 +65,7 @@
       const appendRow = row => {
         const log = document.getElementById("sys_col_log");
         log.appendChild(row);
+        log.scrollTo({top: log.scrollHeight});
       }
 
       const clearLogs = () => {
