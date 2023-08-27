@@ -29,6 +29,7 @@ html, body {
   grid-column: span 12;
   display: flex;
   align-items: flex-end;
+  cursor: default;
 }
 
 #sys_col_bar button {
@@ -52,7 +53,7 @@ html, body {
   margin: 0;
   padding: 0;
   display: flex;
-  cursor: pointer;
+  cursor: text;
 }
 
 
@@ -147,13 +148,13 @@ html, body {
     background: #CCCCCC;
   }
 
-  .sys_col_row,
-  .sys_col_command {
+  .sys_col_status {
     color: #000000;
   }
 
-  .sys_col_row:hover {
-    border-bottom-color: #000000;
+  .sys_col_row,
+  .sys_col_command {
+    color: #000000;
   }
 
   .sys_col_response {
@@ -194,13 +195,13 @@ html, body {
     background: #999999;
   }
 
-  .sys_col_row,
-  .sys_col_command {
+  .sys_col_status {
     color: #CCCCCC;
   }
 
-  .sys_col_row:hover {
-    border-bottom-color: #999999;
+  .sys_col_row,
+  .sys_col_command {
+    color: #CCCCCC;
   }
 
   .sys_col_response {
