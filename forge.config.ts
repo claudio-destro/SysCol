@@ -6,6 +6,7 @@ import {spawn} from "node:child_process";
 
 import {mainConfig} from "./webpack.main.config";
 import {rendererConfig} from "./webpack.renderer.config";
+import MakerSquirrel from "@electron-forge/maker-squirrel";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const readPackageJson = async (_forgeConfig: ResolvedForgeConfig, packageJson: Record<string, any>): Promise<Record<string, any>> => {
@@ -16,7 +17,7 @@ const readPackageJson = async (_forgeConfig: ResolvedForgeConfig, packageJson: R
 
 const packageAfterPrune = async (_forgeConfig: ResolvedForgeConfig, buildPath: string): Promise<void> => {
   return new Promise((resolve, reject) => {
-    const npmInstall = spawn("npm", ["install", "--omit", "dev"], {
+    const npmInstall = spawn("npm", ["install", "--production"], {
       cwd: buildPath,
       stdio: "ignore",
       shell: true,
@@ -43,7 +44,10 @@ const config: ForgeConfig = {
     asar: true,
   },
   rebuildConfig: {},
-  makers: [new MakerZIP({}, ["darwin", "win32"])],
+  makers: [
+    new MakerZIP({}, ["darwin"]),
+    new MakerSquirrel({}, ["win32"])
+  ],
   plugins: [
     new AutoUnpackNativesPlugin({}),
     new WebpackPlugin({
