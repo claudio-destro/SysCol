@@ -1,5 +1,7 @@
+import EventEmitter from "node:events";
+import {cwd, hrtime} from "node:process";
+import {dirname, resolve} from "node:path";
 import {PathLike} from "node:fs";
-import {hrtime} from "node:process";
 import {RegexParser, SerialPort} from "serialport";
 import {openSerialPort} from "./macros/openSerialPort";
 import {parseCommand} from "./protocol/parseCommand";
@@ -8,27 +10,25 @@ import {sleep} from "./macros/sleep";
 import {stringifyHardwareCommand} from "./protocol/stringifyHardwareCommand";
 import {getTestResult} from "./protocol/getTestResult";
 import {TestScript} from "./TestScript";
-import EventEmitter from "node:events";
 import {TestScriptEvent, TestScriptListenerMap, TestScriptListeners} from "./TestScriptEvents";
+import {TestScriptInterruptSignal} from "./TestScriptInterruptController";
+import {TestScriptFactory} from "./TestScriptFactory";
 import {parseInterval} from "./macros/parseInterval";
 import {openLogFile} from "./macros/openLogFile";
 import {LogFile} from "./LogFile";
-import {TestScriptFactory} from "./TestScriptFactory";
-import {dirname, resolve} from "node:path";
-import {app} from "electron";
 
 const hrtimeToMicroseconds = ([n, m]: [number, number]): number => n * 1000000 + m / 1000;
 
 const resolvePathAgainstScript = (script: TestScript, file: string): string => {
   const {filePath: basePath} = script;
-  const basedir = typeof basePath === "string" || basePath instanceof Buffer ? dirname(basePath.toString()) : app.getPath("home");
+  const basedir = typeof basePath === "string" || basePath instanceof Buffer ? dirname(basePath.toString()) : cwd();
   return resolve(basedir, file);
 };
 
 export class TestScriptImpl implements TestScript {
-  #events = new EventEmitter();
-  #path?: PathLike | null;
-  #data: Array<string>;
+  readonly #events = new EventEmitter();
+  readonly #path?: PathLike | null;
+  readonly #data: Array<string>;
   #currentLine = 0;
   #commandTimeout = 5000;
   #serialPort?: SerialPort | null;
@@ -48,6 +48,8 @@ export class TestScriptImpl implements TestScript {
     return this.#currentLine;
   }
 
+  signal?: TestScriptInterruptSignal | null;
+
   on<T extends TestScriptEvent>(event: T, listener: TestScriptListenerMap[T]): void {
     this.#events.on(event, listener);
   }
@@ -60,8 +62,7 @@ export class TestScriptImpl implements TestScript {
     this.#events.off(event, listener);
   }
 
-  async executeScript() {
-    this.#events.listeners("");
+  async execute(): Promise<void> {
     this.#emit("start");
     try {
       for await (const {response, elapsed} of this.#executeSingleCommand()) {
@@ -113,6 +114,7 @@ export class TestScriptImpl implements TestScript {
 
   async *#executeSingleCommand() {
     for (;;) {
+      this.signal?.throwIfInterrupted();
       const row = this.#nextLine();
       if (row === null) return;
       const {command, commandLine, argv} = parseCommand(row);
@@ -169,6 +171,7 @@ export class TestScriptImpl implements TestScript {
     return new Promise((resolve, reject) => {
       TestScriptFactory.fromFile(resolvePathAgainstScript(this, scriptFile))
         .then(script => {
+          script.signal = this.signal;
           this.#emit("message", "info", script.filePath.toString());
           // this.#listeners("error").forEach(listener => script.on("error", listener));
           this.#listeners("message").forEach(listener => script.on("message", listener));
@@ -178,7 +181,7 @@ export class TestScriptImpl implements TestScript {
           this.#listeners("start").forEach(listener => script.on("start", listener));
           this.#listeners("stop").forEach(listener => script.on("stop", listener));
           script.once("error", reject);
-          script.executeScript().then(resolve, reject);
+          script.execute().then(resolve, reject);
         })
         .catch(reject);
     });

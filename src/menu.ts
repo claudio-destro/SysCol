@@ -1,6 +1,6 @@
 import {app, BrowserWindow, dialog, Menu} from "electron";
 import {platform} from "node:process";
-import {executeScript, loadScript, reloadScript} from "./scripts";
+import {executeScript, interruptScript, loadScript, reloadScript} from "./scripts";
 import {createWindow} from "./createWindow";
 import MenuItemConstructorOptions = Electron.MenuItemConstructorOptions;
 
@@ -22,6 +22,7 @@ const reloadAndExecuteScript = (window?: BrowserWindow | null): void => {
     window.reload();
   }
 };
+
 
 // const clearLogs = (window: BrowserWindow | null): void => window?.webContents.send("clearLogs");
 
@@ -54,6 +55,12 @@ const template: Array<MenuItemConstructorOptions> = [
         accelerator: "CommandOrControl+R",
         click: () => reloadAndExecuteScript(BrowserWindow.getFocusedWindow()),
       },
+      {
+        id: "interruptScript",
+        label: "Interrupt",
+        accelerator: isMac ? "Command+\\" : "F8",
+        click: () => interruptScript(BrowserWindow.getFocusedWindow())
+      }
       // {
       //   id: "clearLogs",
       //   label: "Clear",
