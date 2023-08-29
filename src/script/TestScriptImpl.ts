@@ -13,8 +13,17 @@ import {TestScriptEvent, TestScriptListenerMap, TestScriptListeners} from "./Tes
 import {parseInterval} from "./macros/parseInterval";
 import {openLogFile} from "./macros/openLogFile";
 import {LogFile} from "./LogFile";
+import {TestScriptFactory} from "./TestScriptFactory";
+import {dirname, resolve} from "node:path";
+import {app} from "electron";
 
 const hrtimeToMicroseconds = ([n, m]: [number, number]): number => n * 1000000 + m / 1000;
+
+const resolvePathAgainstScript = (script: TestScript, file: string): string => {
+  const {filePath: basePath} = script;
+  const basedir = typeof basePath === "string" || basePath instanceof Buffer ? dirname(basePath.toString()) : app.getPath("home");
+  return resolve(basedir, file);
+};
 
 export class TestScriptImpl implements TestScript {
   #events = new EventEmitter();
@@ -52,6 +61,7 @@ export class TestScriptImpl implements TestScript {
   }
 
   async executeScript() {
+    this.#events.listeners("");
     this.#emit("start");
     try {
       for await (const {response, elapsed} of this.#executeSingleCommand()) {
@@ -75,7 +85,7 @@ export class TestScriptImpl implements TestScript {
       console.error("Error", err);
       this.#emit("error", err);
     } finally {
-      this.#emit("end");
+      this.#emit("stop");
       this.#serialPort?.close();
       this.#serialPortReader?.destroy();
       this.#logFileWriter?.close();
@@ -88,6 +98,10 @@ export class TestScriptImpl implements TestScript {
 
   #emit<T extends TestScriptEvent>(event: T, ...args: Parameters<TestScriptListeners[T]>): void {
     this.#events.emit(event, ...args);
+  }
+
+  #listeners<T extends TestScriptEvent>(event: T): Array<TestScriptListeners[T]> {
+    return this.#events.listeners(event) as Array<TestScriptListeners[T]>;
   }
 
   #nextLine(): string | null {
@@ -128,6 +142,10 @@ export class TestScriptImpl implements TestScript {
             this.#serialPort = await openSerialPort(argv[0], argv[1]);
             this.#serialPortReader = this.#serialPort.pipe(new RegexParser({regex: /[\r\n]+/}));
             break;
+          case "run_script":
+            this.#emit("message", "info", row);
+            await this.#runScript(argv[0]);
+            break;
           case "timeout":
             this.#commandTimeout = parseInterval(argv[0]);
             this.#emit("message", "info", row);
@@ -145,6 +163,25 @@ export class TestScriptImpl implements TestScript {
         yield this.#sendCommandAndWaitResponse(stringifyHardwareCommand(command, ...argv));
       }
     }
+  }
+
+  async #runScript(scriptFile: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      TestScriptFactory.fromFile(resolvePathAgainstScript(this, scriptFile))
+        .then(script => {
+          this.#emit("message", "info", script.filePath.toString());
+          // this.#listeners("error").forEach(listener => script.on("error", listener));
+          this.#listeners("message").forEach(listener => script.on("message", listener));
+          this.#listeners("command").forEach(listener => script.on("command", listener));
+          this.#listeners("response").forEach(listener => script.on("response", listener));
+          this.#listeners("test").forEach(listener => script.on("test", listener));
+          this.#listeners("start").forEach(listener => script.on("start", listener));
+          this.#listeners("stop").forEach(listener => script.on("stop", listener));
+          script.once("error", reject);
+          script.executeScript().then(resolve, reject);
+        })
+        .catch(reject);
+    });
   }
 
   async #sendCommandAndWaitResponse(cmd: string, timeout = this.#commandTimeout) {

@@ -1,81 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8"/>
-    <title>SysCol - [no script]</title>
-    <script type="application/javascript">
-      const tests = {pass: 0, fail: 0};
-
-      const microsecondsToInstant = time => {
-        if (time < 1) return "";
-        if (time < 1000) return `[${time.toFixed(0)}μs]`;
-        time /= 1000;
-        if (time < 1000) return `[${time.toFixed(0)}ms]`;
-        time /= 1000;
-        return `[${time.toFixed(1)}s]`;
-      }
-
-      const logCommand = (_lineno, command) => {
-        const row = document.createElement("p");
-        row.className = "sys_col_command sys_col_row";
-        row.innerText = command;
-        appendRow(row);
-      };
-
-      const logTest = (lineno, response, passed, elapsed) => {
-        const status = passed ? "pass" : "fail";
-        logCommandResponse(lineno, response, elapsed, status);
-        tests[status]++;
-      }
-
-      const logCommandResponse = (lineno, response, elapsed, status) => {
-        elapsed = microsecondsToInstant(elapsed);
-        const row = document.createElement("p");
-        row.className = "sys_col_response sys_col_row";
-        row.classList.toggle("test_pass", status === "pass");
-        row.classList.toggle("test_fail", status === "fail");
-        const body = document.createElement("span");
-        body.innerText = response.toString().trim();
-        row.appendChild(body);
-        const lap = document.createElement("span");
-        lap.className = "sys_col_elapsed";
-        lap.innerText = elapsed;
-        row.appendChild(lap);
-        appendRow(row);
-      }
-
-      const logMessage = (lineno, type, message) => {
-        message = (message ?? "").trim()
-        const row = document.createElement("p");
-        row.className = `sys_col_message sys_col_row ${type}`;
-        if (message) row.innerText = message;
-        else row.innerHTML = "&nbsp;";
-        appendRow(row);
-      }
-
-      const logStatus = status => {
-        document.querySelectorAll("#sys_col_bar .sys_col_status").forEach(e => e.innerText = status);
-      };
-
-      const logError = (lineno, err) => {
-        logMessage(lineno, "error", `Error at line ${lineno}: ${err}`);
-        logStatus(`Error at line ${lineno}`);
-      }
-
-      const appendRow = row => {
-        const log = document.getElementById("sys_col_log");
-        log.appendChild(row);
-        log.scrollTo({top: log.scrollHeight});
-      }
-
-      const clearLogs = () => {
-        const log = document.getElementById("sys_col_log");
-        log.innerHTML = "";
-      }
-
-      const setScriptFileName = (file) => document.title = `SysCol - ${file}`;
-
-    </script>
+    <title>[]</title>
 </head>
 <body>
 <div id="sys_col">
@@ -84,16 +11,5 @@
         <p class="sys_col_status"></p>
     </footer>
 </div>
-<script>
-  SysCol.registerEventListener("clearLogs", clearLogs);
-  SysCol.registerEventListener("setScriptFileName", setScriptFileName);
-  SysCol.registerEventListener("error", logError);
-  SysCol.registerEventListener("message", logMessage);
-  SysCol.registerEventListener("command", logCommand);
-  SysCol.registerEventListener("response", logCommandResponse);
-  SysCol.registerEventListener("test", logTest);
-  SysCol.registerEventListener("start", () => logStatus("Running..."));
-  SysCol.registerEventListener("end", () => logStatus(`Tests: ${tests.pass} passed, ${tests.pass + tests.fail} total`));
-</script>
 </body>
 </html>

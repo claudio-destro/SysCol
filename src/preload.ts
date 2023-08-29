@@ -11,15 +11,15 @@ type RegisteredEventMap = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const REGISTERED_EVENTS: RegisteredEventMap = {
-  clearLogs: [], // unused
   setScriptFileName: [], // unused
+  clearLogs: [], // unused
   error: [],
   message: [],
   command: [],
   response: [],
   test: [],
   start: [],
-  end: [],
+  stop: [],
 };
 
 const SYS_COL_API: SysColApi = {

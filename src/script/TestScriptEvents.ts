@@ -6,7 +6,7 @@ export interface TestScriptListeners {
   test(response: string, passed: boolean, elapsed: number): void;
   message(type: "log" | "info" | "error", message: string): void;
   start(): void;
-  end(): void;
+  stop(): void;
 }
 
 export type TestScriptEvent = keyof TestScriptListeners;

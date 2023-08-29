@@ -27,3 +27,27 @@
  */
 
 import "./index.css";
+
+import {clearLogs, getTestResults, logCommand, logCommandResponse, logError, logMessage, logStatus, logTest} from "./index";
+
+export const setScriptFileName = (file: string): void => {
+  document.title = file;
+  logStatus(file);
+};
+
+const logStarted = () => logStatus("Running...");
+
+const logStopped = (): void => {
+  const tests = getTestResults();
+  logStatus(`Tests: ${tests.pass} passed, ${tests.pass + tests.fail} total`);
+};
+
+SysCol.registerEventListener("setScriptFileName", setScriptFileName);
+SysCol.registerEventListener("clearLogs", clearLogs);
+SysCol.registerEventListener("error", logError);
+SysCol.registerEventListener("message", logMessage);
+SysCol.registerEventListener("command", logCommand);
+SysCol.registerEventListener("response", logCommandResponse);
+SysCol.registerEventListener("test", logTest);
+SysCol.registerEventListener("start", logStarted);
+SysCol.registerEventListener("stop", logStopped);

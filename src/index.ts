@@ -1,41 +1,69 @@
-import {app, BrowserWindow, ipcMain} from "electron";
-import {platform} from "node:process";
-import {loadSettings, saveSettings} from "./settings";
-import {executeScript} from "./scripts";
-import {createMenu} from "./menu";
-import {IpcMainEvent, IpcMainEventListenerMap} from "./IpcEvents";
-import {createWindow} from "./createWindow";
+const tests = {pass: 0, fail: 0};
 
-const isMac = platform === "darwin";
-
-// Handle creating/removing shortcuts on Windows when installing/uninstalling.
-// eslint-disable-next-line global-require
-if (require("electron-squirrel-startup")) {
-  app.quit();
-}
-
-app.setName("SysCol");
-app.on("ready", loadSettings);
-app.on("before-quit", saveSettings);
-app.on("window-all-closed", () => {
-  if (!isMac) app.quit();
-});
-
-app.on("activate", async () => {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    await createWindow();
-  }
-});
-
-const registerIpcMainListener = <E extends IpcMainEvent>(event: E, listener: IpcMainEventListenerMap[E]): void => {
-  ipcMain.on(event, listener);
+const microsecondsToInstant = (time: number): string => {
+  if (time < 1) return "";
+  if (time < 1000) return `[${time.toFixed(0)}μs]`;
+  time /= 1000;
+  if (time < 1000) return `[${time.toFixed(0)}ms]`;
+  time /= 1000;
+  return `[${time.toFixed(1)}s]`;
 };
 
-registerIpcMainListener("executeScript", async () => {
-  const window: BrowserWindow | null = BrowserWindow.getFocusedWindow();
-  if (window) return executeScript(window);
-});
+const appendRow = (row: HTMLElement): void => {
+  const log = document.getElementById("sys_col_log");
+  log.appendChild(row);
+  log.scrollTo({top: log.scrollHeight});
+};
 
-createMenu();
+export const logCommand = (_lineno: number, command: string): void => {
+  const row = document.createElement("p");
+  row.className = "sys_col_command sys_col_row";
+  row.innerText = command;
+  appendRow(row);
+};
+
+export const logTest = (lineno: number, response: string, passed: boolean, elapsed: number): void => {
+  const status = passed ? "pass" : "fail";
+  logCommandResponse(lineno, response, elapsed, status);
+  tests[status]++;
+};
+
+export const logCommandResponse = (_lineno: number, response: string, elapsed: number, status?: "pass" | "fail"): void => {
+  const row = document.createElement("p");
+  row.className = "sys_col_response sys_col_row";
+  row.classList.toggle("test_pass", status === "pass");
+  row.classList.toggle("test_fail", status === "fail");
+  const body = document.createElement("span");
+  body.innerText = response.toString().trim();
+  row.appendChild(body);
+  const lap = document.createElement("span");
+  lap.className = "sys_col_elapsed";
+  lap.innerText = microsecondsToInstant(elapsed);
+  row.appendChild(lap);
+  appendRow(row);
+};
+
+export const logMessage = (_lineno: number, type: string, message: string): void => {
+  message = (message ?? "").trim();
+  const row = document.createElement("p");
+  row.className = `sys_col_message sys_col_row ${type}`;
+  if (message) row.innerText = message;
+  else row.innerHTML = "&nbsp;";
+  appendRow(row);
+};
+
+export const logStatus = (status: string): void => {
+  document.querySelectorAll("#sys_col_bar .sys_col_status").forEach((e: HTMLElement) => (e.innerText = status));
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const logError = (lineno: number, err: any): void => {
+  logMessage(lineno, "error", `Error at line ${lineno}: ${err}`);
+};
+
+export const clearLogs = (): void => {
+  const log = document.getElementById("sys_col_log");
+  log.innerHTML = "";
+};
+
+export const getTestResults = () => ({...tests});
