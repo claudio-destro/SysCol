@@ -58,7 +58,7 @@ const template: Array<MenuItemConstructorOptions> = [
       {
         id: "interruptScript",
         label: "Interrupt",
-        accelerator: isMac ? "Command+\\" : "F8",
+        accelerator: isMac ? "Command+." : "F8",
         click: () => interruptScript(BrowserWindow.getFocusedWindow())
       }
       // {

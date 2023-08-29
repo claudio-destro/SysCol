@@ -15,6 +15,8 @@ if (require("electron-squirrel-startup")) {
 }
 
 app.setName("SysCol");
+app.commandLine.appendSwitch("lang", "en");
+
 app.on("ready", loadSettings);
 app.on("before-quit", saveSettings);
 app.on("window-all-closed", () => {
