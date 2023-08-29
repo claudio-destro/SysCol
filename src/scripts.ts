@@ -15,7 +15,6 @@ const makeTestScriptEventListenerFactory = (script: TestScript, window: BrowserW
   };
 };
 
-
 export const loadScript = async (file: PathLike, window: BrowserWindow) => {
   console.log(`Load script ${JSON.stringify(file)} into window "${window.id}"`);
   const script = await TestScriptFactory.fromFile(file);
