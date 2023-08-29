@@ -39,6 +39,15 @@ Eventually, the final distributable ZIP will be in
 
 `out/make/zip/[PLATFORM]/[ARCH]/SysCol-[PLATFORM]-[ARCH]-[VERSION].zip`
 
+### Examples
+
+- Windows
+  - `out\make\zip\squirrel.windows\x64\SysCol-1.0.0 Setup.exe`
+- macOS
+    - `out/make/zip/darwin/x64/SysCol-darwin-x64-1.0.0.zip`
+    - `out/make/zip/darwin/arm64/SysCol-darwin-arm64-1.0.0.zip`
+
+
 ## Communication Protocol and Commands
 
 ### Command
