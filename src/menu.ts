@@ -23,7 +23,6 @@ const reloadAndExecuteScript = (window?: BrowserWindow | null): void => {
   }
 };
 
-
 // const clearLogs = (window: BrowserWindow | null): void => window?.webContents.send("clearLogs");
 
 const template: Array<MenuItemConstructorOptions> = [
@@ -59,8 +58,8 @@ const template: Array<MenuItemConstructorOptions> = [
         id: "interruptScript",
         label: "Interrupt",
         accelerator: isMac ? "Command+." : "F8",
-        click: () => interruptScript(BrowserWindow.getFocusedWindow())
-      }
+        click: () => interruptScript(BrowserWindow.getFocusedWindow()),
+      },
       // {
       //   id: "clearLogs",
       //   label: "Clear",
