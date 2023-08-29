@@ -9,10 +9,10 @@ type RegisteredEventMap = {
   }>;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const REGISTERED_EVENTS: RegisteredEventMap = {
   setScriptFileName: [], // unused
   clearLogs: [], // unused
+  interrupt: [],
   error: [],
   message: [],
   command: [],

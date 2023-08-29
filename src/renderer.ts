@@ -42,9 +42,12 @@ const logStopped = (): void => {
   logStatus(`Tests: ${tests.pass} passed, ${tests.pass + tests.fail} total`);
 };
 
+const logInterrupt = () => logStatus("Interrupt...");
+
 SysCol.registerEventListener("setScriptFileName", setScriptFileName);
 SysCol.registerEventListener("clearLogs", clearLogs);
 SysCol.registerEventListener("error", logError);
+SysCol.registerEventListener("interrupt", logInterrupt);
 SysCol.registerEventListener("message", logMessage);
 SysCol.registerEventListener("command", logCommand);
 SysCol.registerEventListener("response", logCommandResponse);

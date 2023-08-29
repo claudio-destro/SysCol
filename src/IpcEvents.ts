@@ -20,6 +20,7 @@ export type IpcMainEventListenerMap = {
 
 export type IpcRendererEventListeners = {
   clearLogs(): void;
+  interrupt(): void;
   setScriptFileName(fileName: string): void;
 } & {
   [event in TestScriptEvent]: (lineno: number, ...arg: Parameters<TestScriptListeners[event]>) => void;

@@ -9,7 +9,7 @@ import {parseCommandResponse} from "./protocol/parseCommandResponse";
 import {sleep} from "./macros/sleep";
 import {stringifyHardwareCommand} from "./protocol/stringifyHardwareCommand";
 import {getTestResult} from "./protocol/getTestResult";
-import {TestScript} from "./TestScript";
+import {TestScript, TestScriptReadyState} from "./TestScript";
 import {TestScriptEvent, TestScriptListenerMap, TestScriptListeners} from "./TestScriptEvents";
 import {TestScriptInterruptSignal} from "./TestScriptInterruptController";
 import {TestScriptFactory} from "./TestScriptFactory";
@@ -26,9 +26,11 @@ const resolvePathAgainstScript = (script: TestScript, file: string): string => {
 };
 
 export class TestScriptImpl implements TestScript {
+  signal?: TestScriptInterruptSignal | null;
   readonly #events = new EventEmitter();
   readonly #path?: PathLike | null;
   readonly #data: Array<string>;
+  #readyState: TestScriptReadyState = "new";
   #currentLine = 0;
   #commandTimeout = 5000;
   #serialPort?: SerialPort | null;
@@ -48,7 +50,9 @@ export class TestScriptImpl implements TestScript {
     return this.#currentLine;
   }
 
-  signal?: TestScriptInterruptSignal | null;
+  get readyState(): TestScriptReadyState {
+    return this.#readyState;
+  }
 
   on<T extends TestScriptEvent>(event: T, listener: TestScriptListenerMap[T]): void {
     this.#events.on(event, listener);
@@ -63,6 +67,7 @@ export class TestScriptImpl implements TestScript {
   }
 
   async execute(): Promise<void> {
+    this.#readyState = "running";
     this.#emit("start");
     try {
       for await (const {response, elapsed} of this.#executeSingleCommand()) {
@@ -82,9 +87,11 @@ export class TestScriptImpl implements TestScript {
             break;
         }
       }
+      this.#readyState = "stopped";
     } catch (err) {
-      console.error("Error", err);
+      this.#readyState = "stopped";
       this.#emit("error", err);
+      throw err;
     } finally {
       this.#emit("stop");
       this.#serialPort?.close();
@@ -168,23 +175,14 @@ export class TestScriptImpl implements TestScript {
   }
 
   async #runScript(scriptFile: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      TestScriptFactory.fromFile(resolvePathAgainstScript(this, scriptFile))
-        .then(script => {
-          script.signal = this.signal;
-          this.#emit("message", "info", script.filePath.toString());
-          // this.#listeners("error").forEach(listener => script.on("error", listener));
-          this.#listeners("message").forEach(listener => script.on("message", listener));
-          this.#listeners("command").forEach(listener => script.on("command", listener));
-          this.#listeners("response").forEach(listener => script.on("response", listener));
-          this.#listeners("test").forEach(listener => script.on("test", listener));
-          this.#listeners("start").forEach(listener => script.on("start", listener));
-          this.#listeners("stop").forEach(listener => script.on("stop", listener));
-          script.once("error", reject);
-          script.execute().then(resolve, reject);
-        })
-        .catch(reject);
-    });
+    const script = await TestScriptFactory.fromFile(resolvePathAgainstScript(this, scriptFile));
+    script.signal = this.signal;
+    this.#emit("message", "info", script.filePath.toString());
+    this.#listeners("message").forEach(listener => script.on("message", listener));
+    this.#listeners("command").forEach(listener => script.on("command", listener));
+    this.#listeners("response").forEach(listener => script.on("response", listener));
+    this.#listeners("test").forEach(listener => script.on("test", listener));
+    return script.execute();
   }
 
   async #sendCommandAndWaitResponse(cmd: string, timeout = this.#commandTimeout) {

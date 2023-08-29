@@ -15,6 +15,7 @@ const makeTestScriptEventListenerFactory = (script: TestScript, window: BrowserW
   };
 };
 
+
 export const loadScript = async (file: PathLike, window: BrowserWindow) => {
   console.log(`Load script ${JSON.stringify(file)} into window "${window.id}"`);
   const script = await TestScriptFactory.fromFile(file);
@@ -38,8 +39,17 @@ export const reloadScript = async (window: BrowserWindow) => {
   if (file) await loadScript(file, window);
 };
 
-export const executeScript = async (window: BrowserWindow) => SCRIPTS[window.id]?.script.execute();
+export const executeScript = async (window: BrowserWindow) => SCRIPTS[window.id]?.script.execute().catch(console.error);
 
-export const interruptScript = async (window: BrowserWindow) => SCRIPTS[window.id]?.controller.interrupt();
+export const interruptScript = async (window: BrowserWindow) => {
+  const store = SCRIPTS[window.id];
+  if (store) {
+    const {script, controller} = store;
+    if (script.readyState === "running") {
+      window.webContents.send("interrupt", script.lineNumber);
+      controller.interrupt();
+    }
+  }
+};
 
 export const getAllScripts = () => Object.fromEntries(Object.entries(SCRIPTS).map(([windowId, scriptData]) => [windowId, {scriptFile: scriptData.file}]));
