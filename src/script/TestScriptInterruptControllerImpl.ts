@@ -18,7 +18,7 @@ class TestScriptInterruptSignalImpl implements TestScriptInterruptSignal {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get reason(): any | undefined {
-    return this.#interrupt.interrupted ? this.#reason ?? new TestScriptError("Interrupted", "INTERRUPT_ERROR") : undefined;
+    return this.#interrupt.interrupted ? this.#reason ?? new TestScriptError("Interrupted", "InterruptError") : undefined;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

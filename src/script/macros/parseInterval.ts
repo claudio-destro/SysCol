@@ -15,6 +15,6 @@ export const parseInterval = (str: string): number => {
     const interval = +m[1];
     const mul = TO_MILLISECONDS[m[2]] ?? -1;
     if (mul > 0) return interval * mul;
-    throw new TestScriptError(`Malformed interval ${JSON.stringify(str)}`, "SYNTAX_ERROR");
+    throw new TestScriptError(`Malformed interval ${JSON.stringify(str)}`, "SyntaxError");
   }
 };

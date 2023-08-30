@@ -1,5 +1,6 @@
 import {SerialPort} from "serialport";
 import {parseSerialPortOpenOptions} from "./parseSerialPortOpenOptions";
+import {TestScriptError} from "../TestScriptError";
 
 export const openSerialPort = async (path: string, args: string): Promise<SerialPort> => {
   const serialPort = new SerialPort({
@@ -7,5 +8,5 @@ export const openSerialPort = async (path: string, args: string): Promise<Serial
     autoOpen: false,
     path,
   });
-  return new Promise((resolve, reject) => serialPort.open(err => (err ? reject(err) : resolve(serialPort))));
+  return new Promise((resolve, reject) => serialPort.open(err => (err ? reject(new TestScriptError(err.message, "HardwareError")) : resolve(serialPort))));
 };

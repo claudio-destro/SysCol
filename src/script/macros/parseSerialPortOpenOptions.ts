@@ -29,5 +29,5 @@ export const parseSerialPortOpenOptions = (cfg: string): SerialPortOpenOptions =
       stopBit: +stopBits as SerialPortStopBits,
     };
   }
-  throw new TestScriptError(`Unrecognized serial configuration ${JSON.stringify(cfg)}`, "SYNTAX_ERROR");
+  throw new TestScriptError(`Unrecognized serial configuration ${JSON.stringify(cfg)}`, "SyntaxError");
 };

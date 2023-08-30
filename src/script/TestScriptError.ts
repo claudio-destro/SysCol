@@ -1,11 +1,14 @@
 import {TestScript} from "./TestScript";
 
-export type TestScriptErrorName = "INTERRUPT_ERROR" | "SYNTAX_ERROR" | "TIMEOUT_ERROR";
+export type TestScriptErrorName = "HardwareError" | "InterruptError" | "SyntaxError" | "TimeoutError";
 
 export class TestScriptError {
-  stack: Array<{fileName?: string | null, lineNumber: number}> = [];
+  stack: Array<{fileName?: string | null; lineNumber: number}> = [];
 
-  constructor(public message: string, public name: TestScriptErrorName) {
+  constructor(
+    public message: string,
+    public name: TestScriptErrorName,
+  ) {
     /* EMPTY */
   }
 

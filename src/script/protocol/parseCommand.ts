@@ -24,5 +24,5 @@ export const parseCommand = (str: string): Command => {
       };
     }
   }
-  throw new TestScriptError(`Unrecognized command ${JSON.stringify(str)}`, "SYNTAX_ERROR");
+  throw new TestScriptError(`Unrecognized command ${JSON.stringify(str)}`, "SyntaxError");
 };

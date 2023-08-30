@@ -4,7 +4,7 @@ import {TestScriptError} from "../TestScriptError";
 const parseArgument = (arg: string): CommandResponseArgument => {
   const m = /^\s*([^:]*)(?::([^ ]+))?\s*$/.exec(arg);
   if (m && m[1]) return {key: m[1], value: m[2]};
-  throw new TestScriptError(`Unrecognized parameter ${JSON.stringify(arg)}`, "SYNTAX_ERROR");
+  throw new TestScriptError(`Unrecognized parameter ${JSON.stringify(arg)}`, "SyntaxError");
 };
 
 const parseArguments = (args: string): Array<CommandResponseArgument> => {
@@ -29,5 +29,5 @@ export const parseCommandResponse = (str: string): CommandResponse => {
       return {command, commandLine, argv, error};
     }
   }
-  throw new TestScriptError(`Unrecognized response ${JSON.stringify(str)}`, "SYNTAX_ERROR");
+  throw new TestScriptError(`Unrecognized response ${JSON.stringify(str)}`, "SyntaxError");
 };

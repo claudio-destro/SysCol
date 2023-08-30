@@ -168,7 +168,7 @@ export class TestScriptImpl implements TestScript {
             break;
           }
           default:
-            throw new TestScriptError(`Unrecognized command ${JSON.stringify(command)}`, "SYNTAX_ERROR");
+            throw new TestScriptError(`Unrecognized command ${JSON.stringify(command)}`, "SyntaxError");
         }
       } else {
         yield this.#sendCommandAndWaitResponse(stringifyHardwareCommand(command, ...argv));
@@ -215,7 +215,7 @@ export class TestScriptImpl implements TestScript {
       const id = setTimeout(() => {
         this.#serialPortReader?.off("data", onData);
         this.#serialPortReader?.off("error", onError);
-        reject(new TestScriptError(`"${cmd}" timed out after ${timeout}ms`, "TIMEOUT_ERROR"));
+        reject(new TestScriptError(`"${cmd}" timed out after ${timeout}ms`, "TimeoutError"));
       }, timeout);
 
       this.#serialPortReader?.once("data", onData);
