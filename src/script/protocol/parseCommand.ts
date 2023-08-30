@@ -1,4 +1,5 @@
 import {Command} from "../Command";
+import {TestScriptError} from "../TestScriptError";
 
 const parseArguments = (args: string): Array<string> => {
   const values: Array<string> = [];
@@ -23,5 +24,5 @@ export const parseCommand = (str: string): Command => {
       };
     }
   }
-  throw new SyntaxError(`Unrecognized command ${JSON.stringify(str)}`);
+  throw new TestScriptError(`Unrecognized command ${JSON.stringify(str)}`, "SYNTAX_ERROR");
 };

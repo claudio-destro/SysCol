@@ -1,4 +1,5 @@
 import {SerialPortDataBits, SerialPortOpenOptions, SerialPortParity, SerialPortStopBits} from "../SerialPortOpenOptions";
+import {TestScriptError} from "../TestScriptError";
 
 // prettier-ignore
 type SerialPortParityShort<parity extends SerialPortParity> =
@@ -28,5 +29,5 @@ export const parseSerialPortOpenOptions = (cfg: string): SerialPortOpenOptions =
       stopBit: +stopBits as SerialPortStopBits,
     };
   }
-  throw new SyntaxError(`Unrecognized serial configuration ${JSON.stringify(cfg)}`);
+  throw new TestScriptError(`Unrecognized serial configuration ${JSON.stringify(cfg)}`, "SYNTAX_ERROR");
 };

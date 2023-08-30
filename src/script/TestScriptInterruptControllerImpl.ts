@@ -1,4 +1,5 @@
 import {TestScriptInterruptController, TestScriptInterruptSignal} from "./TestScriptInterruptController";
+import {TestScriptError} from "./TestScriptError";
 
 type Interrupt = {interrupted: boolean};
 
@@ -17,7 +18,7 @@ class TestScriptInterruptSignalImpl implements TestScriptInterruptSignal {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get reason(): any | undefined {
-    return this.#interrupt.interrupted ? this.#reason ?? new RangeError("Interrupted") : undefined;
+    return this.#interrupt.interrupted ? this.#reason ?? new TestScriptError("Interrupted", "INTERRUPT_ERROR") : undefined;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

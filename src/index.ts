@@ -1,3 +1,5 @@
+import {TestScriptError} from "./script/TestScriptError";
+
 const tests = {pass: 0, fail: 0};
 
 const microsecondsToInstant = (time: number): string => {
@@ -43,7 +45,7 @@ export const logCommandResponse = (_lineno: number, response: string, elapsed: n
   appendRow(row);
 };
 
-export const logMessage = (_lineno: number, type: string, message: string): void => {
+export const logMessage = (_lineno: number, type: "log" | "info" | "error" | "stack", message: string): void => {
   message = (message ?? "").trim();
   const row = document.createElement("p");
   row.className = `sys_col_message sys_col_row ${type}`;
@@ -57,8 +59,12 @@ export const logStatus = (status: string): void => {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const logError = (lineno: number, err: any): void => {
-  logMessage(lineno, "error", `Error at line ${lineno}: ${err}`);
+export const logError = (lineno: number, err: TestScriptError): void => {
+  const {message, name, stack} = err;
+  logMessage(lineno, "error", `${name}: ${message}`);
+  for (const {fileName, lineNumber} of stack) {
+    logMessage(lineno, "stack", `at ${fileName}:${lineNumber}`);
+  }
 };
 
 export const clearLogs = (): void => {

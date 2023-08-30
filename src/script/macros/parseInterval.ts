@@ -1,3 +1,5 @@
+import {TestScriptError} from "../TestScriptError";
+
 const TO_MILLISECONDS: Record<string, number> = {
   us: 0.001,
   μs: 0.001,
@@ -13,6 +15,6 @@ export const parseInterval = (str: string): number => {
     const interval = +m[1];
     const mul = TO_MILLISECONDS[m[2]] ?? -1;
     if (mul > 0) return interval * mul;
-    throw new RangeError(`Malformed interval ${JSON.stringify(str)}`);
+    throw new TestScriptError(`Malformed interval ${JSON.stringify(str)}`, "SYNTAX_ERROR");
   }
 };

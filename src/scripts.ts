@@ -38,14 +38,14 @@ export const reloadScript = async (window: BrowserWindow) => {
   if (file) await loadScript(file, window);
 };
 
-export const executeScript = async (window: BrowserWindow) => SCRIPTS[window.id]?.script.execute().catch(console.error);
+export const executeScript = async (window: BrowserWindow) => SCRIPTS[window.id]?.script.execute().catch(e => console.error(e.toString()));
 
 export const interruptScript = async (window: BrowserWindow) => {
   const store = SCRIPTS[window.id];
   if (store) {
     const {script, controller} = store;
     if (script.readyState === "running") {
-      window.webContents.send("interrupt", script.lineNumber);
+      window.webContents.send("interrupt");
       controller.interrupt();
     }
   }

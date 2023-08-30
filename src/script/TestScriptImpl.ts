@@ -16,6 +16,7 @@ import {TestScriptFactory} from "./TestScriptFactory";
 import {parseInterval} from "./macros/parseInterval";
 import {openLogFile} from "./macros/openLogFile";
 import {LogFile} from "./LogFile";
+import {TestScriptError} from "./TestScriptError";
 
 const hrtimeToMicroseconds = ([n, m]: [number, number]): number => n * 1000000 + m / 1000;
 
@@ -88,9 +89,10 @@ export class TestScriptImpl implements TestScript {
         }
       }
       this.#readyState = "stopped";
-    } catch (err) {
+    } catch (e) {
       this.#readyState = "stopped";
-      this.#emit("error", err);
+      const err = e as TestScriptError;
+      if (!err?.addScript(this)) this.#emit("error", err);
       throw err;
     } finally {
       this.#emit("stop");
@@ -166,7 +168,7 @@ export class TestScriptImpl implements TestScript {
             break;
           }
           default:
-            throw new SyntaxError(`Unrecognized command ${JSON.stringify(command)}`);
+            throw new TestScriptError(`Unrecognized command ${JSON.stringify(command)}`, "SYNTAX_ERROR");
         }
       } else {
         yield this.#sendCommandAndWaitResponse(stringifyHardwareCommand(command, ...argv));
@@ -213,7 +215,7 @@ export class TestScriptImpl implements TestScript {
       const id = setTimeout(() => {
         this.#serialPortReader?.off("data", onData);
         this.#serialPortReader?.off("error", onError);
-        reject(new RangeError(`"${cmd}" timed out after ${timeout}ms`));
+        reject(new TestScriptError(`"${cmd}" timed out after ${timeout}ms`, "TIMEOUT_ERROR"));
       }, timeout);
 
       this.#serialPortReader?.once("data", onData);

@@ -78,7 +78,12 @@ html, body {
 }
 
 .sys_col_response.fail,
-.sys_col_message.error {
+.sys_col_message.error,
+.sys_col_message.stack {
+}
+
+.sys_col_message.stack {
+  padding-left: 2em;
 }
 
 /*
@@ -167,7 +172,8 @@ html, body {
   }
 
   .sys_col_response.test_fail,
-  .sys_col_message.error {
+  .sys_col_message.error,
+  .sys_col_message.stack {
     color: #800000;
   }
 
@@ -214,7 +220,8 @@ html, body {
   }
 
   .sys_col_response.test_fail,
-  .sys_col_message.error {
+  .sys_col_message.error,
+  .sys_col_message.stack {
     color: #CC0000;
   }
 
