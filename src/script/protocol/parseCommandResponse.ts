@@ -18,13 +18,41 @@ const parseArguments = (args: string): Array<CommandResponseArgument> => {
   return values;
 };
 
+const parseALM = (args: string): Array<CommandResponseArgument> => {
+  const m = /,?(IL\(P,T,C\)):([01],[01],[01]),(VL\(P,T,C\)):([01],[01],[01]),(VH\(P,T,C\)):([01],[01],[01])/.exec(args);
+  return m?.length === 7
+    ? [
+        {key: m[1], value: m[2]},
+        {key: m[3], value: m[4]},
+        {key: m[5], value: m[6]},
+      ]
+    : parseArguments(args);
+};
+
+const parseDDI = (args: string): Array<CommandResponseArgument> => {
+  const m = /,?(DIGI-IN)\[([^\]]+)]/.exec(args);
+  return m?.length === 3 ? [{key: m[1], value: m[2]}] : parseArguments(args);
+};
+
+const parseDUT = (args: string): Array<CommandResponseArgument> => {
+  const m = /,?(DREG)\[([^\]]+)]/.exec(args);
+  return m?.length === 3 ? [{key: m[1], value: m[2]}] : parseArguments(args);
+};
+
+const CUSTOM_PARSERS: Record<string, (args: string) => Array<CommandResponseArgument>> = {
+  alm: parseALM,
+  ddi: parseDDI,
+  dut: parseDUT,
+};
+
 export const parseCommandResponse = (str: string): CommandResponse => {
   if (str) {
     const m = /\{SC,([A-Z]{3})([^}]*)}/.exec(str);
     if (m?.length >= 1) {
       const command = m[1].toLowerCase();
       const commandLine = m[2];
-      const argv = parseArguments(commandLine);
+      const parse = CUSTOM_PARSERS[command] ?? parseArguments;
+      const argv = parse(commandLine);
       const error = argv.filter(arg => arg.key === "ERR").length >= 1;
       return {command, commandLine, argv, error};
     }

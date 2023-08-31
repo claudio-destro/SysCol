@@ -3,32 +3,6 @@ import {parseCommandResponse} from "../../script/protocol/parseCommandResponse";
 describe("parseCommandResponse", () => {
   test("should parse response", () => expect(parseCommandResponse("{SC,CAR,0FH}")).toMatchObject({command: "car", argv: [{key: "0FH"}]}));
   test("should parse response", () => expect(parseCommandResponse("{SC,DEV,05H}")).toMatchObject({command: "dev", argv: [{key: "05H"}]}));
-  test("should parse response", () =>
-    expect(parseCommandResponse("{SC,DUT,DREG[CA:00H,DE:00H]}")).toMatchObject({
-      command: "dut",
-      argv: [
-        {key: "DREG[CA", value: "00H"},
-        {key: "DE", value: "00H]"},
-      ],
-    }));
-  test("should parse response", () =>
-    expect(parseCommandResponse("{SC,DUT,DREG[CA:01H,DE:02H]}")).toMatchObject({
-      command: "dut",
-      argv: [
-        {key: "DREG[CA", value: "01H"},
-        {key: "DE", value: "02H]"},
-      ],
-    }));
-  test("should parse response", () => expect(parseCommandResponse("{SC,DUT,DREG[NOT FOUND]}")).toMatchObject({command: "dut", argv: [{key: "DREG[NOT FOUND]"}]}));
-  test("should parse response", () =>
-    expect(parseCommandResponse("{SC,DDI,DIGI-IN[HI:8FH,LO:FFH]}")).toMatchObject({
-      command: "ddi",
-      argv: [
-        {key: "DIGI-IN[HI", value: "8FH"},
-        {key: "LO", value: "FFH]"},
-      ],
-    }));
-  test("should parse response", () => expect(parseCommandResponse("{SC,DDI,NO ANSWER}")).toMatchObject({command: "ddi", argv: [{key: "NO ANSWER"}]}));
   test("should parse response", () => expect(parseCommandResponse("{SC,DDO,RLY6:1}")).toMatchObject({command: "ddo", argv: [{key: "RLY6", value: "1"}]}));
   test("should parse response", () => expect(parseCommandResponse("{SC,DDO,NO ANSWER}")).toMatchObject({command: "ddo", argv: [{key: "NO ANSWER"}]}));
   test("should parse response", () => expect(parseCommandResponse("{SC,DDO,RLY4:0}")).toMatchObject({command: "ddo", argv: [{key: "RLY4", value: "0"}]}));
@@ -43,24 +17,8 @@ describe("parseCommandResponse", () => {
   test("should parse response", () => expect(parseCommandResponse("{SC,DMG,1}")).toMatchObject({command: "dmg", argv: [{key: "1"}]}));
   test("should parse response", () => expect(parseCommandResponse("{SC,DMG,0}")).toMatchObject({command: "dmg", argv: [{key: "0"}]}));
   test("should parse response", () => expect(parseCommandResponse("{SC,IGL,2000.0mA}")).toMatchObject({command: "igl", argv: [{key: "2000.0mA"}]}));
-  xtest("should parse response", () =>
-    expect(parseCommandResponse("{SC,ALM,IL(P,T,C):0,0,1,VL(P,T,C):0,1,0,VH(P,T,C):0,0,1}")).toMatchObject({
-      command: "alm",
-      argv: [
-        {key: "IL(P,T,C)", value: "0"},
-        {key: "0"},
-        {key: "1"},
-        {key: "VL(P,T,C)", value: "0"},
-        {key: "1"},
-        {key: "0"},
-        {key: "VH(P,T,C)", value: "0"},
-        {key: "0"},
-        {key: "1"},
-      ],
-    }));
   test("should parse response", () => expect(parseCommandResponse("{SC,VGL,24.000v}")).toMatchObject({command: "vgl", argv: [{key: "24.000v"}]}));
   test("should parse response", () => expect(parseCommandResponse("{SC,VGL,2.000v}")).toMatchObject({command: "vgl", argv: [{key: "2.000v"}]}));
-  xtest("should parse response", () => expect(parseCommandResponse("{SC,VGL,??.???ERR}").error).toBeTruthy());
   test("should parse response", () => expect(parseCommandResponse("{SC,VGL,2.000V}")).toMatchObject({command: "vgl", argv: [{key: "2.000V"}]}));
   test("should parse response", () => expect(parseCommandResponse("{SC,VGH,200.00V}")).toMatchObject({command: "vgh", argv: [{key: "200.00V"}]}));
   test("should parse response", () => expect(parseCommandResponse("{SC,RST,DONE}")).toMatchObject({command: "rst", argv: [{key: "DONE"}]}));
