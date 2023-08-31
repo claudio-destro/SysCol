@@ -1,7 +1,7 @@
 {
   "name": "SysCol",
   "productName": "SysCol",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "SysCol Desktop",
   "main": ".webpack/main",
   "scripts": {
