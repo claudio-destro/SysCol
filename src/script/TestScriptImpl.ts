@@ -1,8 +1,5 @@
-import EventEmitter from "node:events";
-import {cwd, hrtime} from "node:process";
-import {dirname, resolve} from "node:path";
-import {PathLike} from "node:fs";
 import {RegexParser, SerialPort} from "serialport";
+import EventEmitter from "eventemitter3";
 import {openSerialPort} from "./macros/openSerialPort";
 import {parseCommand} from "./protocol/parseCommand";
 import {parseCommandResponse} from "./protocol/parseCommandResponse";
@@ -12,25 +9,22 @@ import {getTestResult} from "./protocol/getTestResult";
 import {TestScript, TestScriptReadyState} from "./TestScript";
 import {TestScriptEvent, TestScriptListenerMap, TestScriptListeners} from "./TestScriptEvents";
 import {TestScriptInterruptSignal} from "./TestScriptInterruptController";
-import {TestScriptFactory} from "./TestScriptFactory";
 import {parseInterval} from "./macros/parseInterval";
 import {openLogFile} from "./macros/openLogFile";
 import {LogFile} from "./LogFile";
 import {TestScriptError} from "./TestScriptError";
+import {TestScriptBuilder} from "./TestScriptBuilder";
 
-const hrtimeToMicroseconds = ([n, m]: [number, number]): number => n * 1000000 + m / 1000;
-
-const resolvePathAgainstScript = (script: TestScript, file: string): string => {
-  const {filePath: basePath} = script;
-  const basedir = typeof basePath === "string" || basePath instanceof Buffer ? dirname(basePath.toString()) : cwd();
-  return resolve(basedir, file);
+const microseconds = () => {
+  return (performance.now() * 1_000) | 0;
 };
 
 export class TestScriptImpl implements TestScript {
   signal?: TestScriptInterruptSignal | null;
-  readonly #events = new EventEmitter();
-  readonly #path?: PathLike | null;
+  readonly #events = new EventEmitter<string>();
+  readonly #path?: string | null;
   readonly #data: Array<string>;
+  readonly #builder: TestScriptBuilder;
   #readyState: TestScriptReadyState = "new";
   #currentLine = 0;
   #commandTimeout = 5000;
@@ -38,12 +32,13 @@ export class TestScriptImpl implements TestScript {
   #serialPortReader?: RegexParser | null;
   #logFileWriter?: LogFile | null;
 
-  constructor(path: PathLike | null, data: string | Buffer) {
+  constructor(path: string | null, data: string, builder: TestScriptBuilder) {
     this.#path = path;
-    this.#data = data.toString().split(/\r\n|\r|\n/gm);
+    this.#data = data.split(/\r\n|\r|\n/gm);
+    this.#builder = builder;
   }
 
-  get filePath(): PathLike | null {
+  get filePath(): string | null {
     return this.#path;
   }
 
@@ -177,7 +172,8 @@ export class TestScriptImpl implements TestScript {
   }
 
   async #runScript(scriptFile: string): Promise<void> {
-    const script = await TestScriptFactory.fromFile(resolvePathAgainstScript(this, scriptFile));
+    scriptFile = await this.#builder.resolve(scriptFile, this.filePath);
+    const script = await this.#builder.fromFile(scriptFile);
     script.signal = this.signal;
     this.#emit("message", "info", script.filePath.toString());
     this.#listeners("message").forEach(listener => script.on("message", listener));
@@ -190,10 +186,10 @@ export class TestScriptImpl implements TestScript {
   async #sendCommandAndWaitResponse(cmd: string, timeout = this.#commandTimeout) {
     this.#emit("command", cmd);
     return new Promise<{response: string; elapsed: number}>((resolve, reject) => {
-      const startTime = hrtimeToMicroseconds(hrtime());
+      const startTime = microseconds();
 
       const onData = (response: string | Buffer): void => {
-        const endTime = hrtimeToMicroseconds(hrtime());
+        const endTime = microseconds();
         // eslint-disable-next-line no-use-before-define
         this.#serialPortReader?.off("error", onError);
         // eslint-disable-next-line no-use-before-define

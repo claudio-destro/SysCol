@@ -26,7 +26,7 @@ const prefix = (prefix: string, maxLength = 5, fillString = " "): string => pref
 const instant = (microseconds: number): string => `[${(microseconds / 1000).toFixed(1)}ms]`;
 
 export const openLogFile = async (script: TestScript, logFile: string): Promise<LogFile> => {
-  const {filePath: basePath} = script;
+  const {filePath} = script;
   const basedir = typeof basePath === "string" || basePath instanceof Buffer ? dirname(basePath.toString()) : app.getPath("logs");
   const path = resolve(basedir, mungeFileName(logFile));
   const writer = createWriteStream(path);
