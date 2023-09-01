@@ -1,18 +1,12 @@
-import {app} from "electron";
-import {dirname, resolve} from "node:path";
-import {createWriteStream} from "node:fs";
-import {LogFile} from "../LogFile";
 import {TestScript} from "../TestScript";
-import {randomInt} from "crypto";
+import {Environment} from "../../environment/Environment";
+import {TextFileWriter} from "../../environment/TextFileWriter";
 
 const now = (): string => new Date().toISOString().replace(/[-:]|\.\d+/g, "");
-const rnd = (): string => "" + randomInt(0, 1_000_000);
 
 const mungeFileName = (name: string): string => {
   return name.replace(/\{\{([^}]+)}}/g, ($0, $1): string => {
     switch ($1) {
-      case "rnd":
-        return rnd();
       case "now":
         return now();
       default:
@@ -25,11 +19,8 @@ const prefix = (prefix: string, maxLength = 5, fillString = " "): string => pref
 
 const instant = (microseconds: number): string => `[${(microseconds / 1000).toFixed(1)}ms]`;
 
-export const openLogFile = async (script: TestScript, logFile: string): Promise<LogFile> => {
-  const {filePath} = script;
-  const basedir = typeof basePath === "string" || basePath instanceof Buffer ? dirname(basePath.toString()) : app.getPath("logs");
-  const path = resolve(basedir, mungeFileName(logFile));
-  const writer = createWriteStream(path);
+export const openLogFile = async (script: TestScript, logFile: string, env: Environment): Promise<TextFileWriter> => {
+  const writer: TextFileWriter = await env.createTextFileWriter(script.filePath, mungeFileName(logFile));
 
   const onCommand = (command: string) => writer.write(`${prefix("<<")} ${command}\r\n`);
   const onResponse = (response: string, elapsed: number) => writer.write(`${prefix(">>")} ${response} ${instant(elapsed)}\r\n`);
@@ -53,11 +44,5 @@ export const openLogFile = async (script: TestScript, logFile: string): Promise<
     script.off("test", onTest);
   };
 
-  return {
-    path,
-    write(message: string): void {
-      writer.write(message);
-    },
-    close,
-  };
+  return writer;
 };

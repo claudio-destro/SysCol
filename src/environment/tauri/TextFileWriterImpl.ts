@@ -1,11 +1,15 @@
 import {TextFileWriter} from "../TextFileWriter";
 import {BaseDirectory, writeTextFile} from "@tauri-apps/api/fs";
 
-export class ElectronTextFileWriter implements TextFileWriter {
+export class TextFileWriterImpl implements TextFileWriter {
   readonly #chunks: Array<string> = [];
-  #filePath: string | null;
+  readonly #filePath: string;
 
-  get filePath(): string | null {
+  constructor(file: string) {
+    this.#filePath = file;
+  }
+
+  get filePath(): string {
     return this.#filePath;
   }
 
@@ -14,10 +18,6 @@ export class ElectronTextFileWriter implements TextFileWriter {
     const data = this.#chunks.join("");
     this.#chunks.length = 0;
     return writeTextFile(path, data, {dir: BaseDirectory.Document});
-  }
-
-  async open(file: string): Promise<void> {
-    this.#filePath = file;
   }
 
   async write(chunk: string): Promise<void> {

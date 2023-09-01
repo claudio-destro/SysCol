@@ -1,12 +1,10 @@
-import {SerialPort} from "serialport";
 import {parseSerialPortOpenOptions} from "./parseSerialPortOpenOptions";
 import {TestScriptError} from "../TestScriptError";
+import {Environment} from "../../environment/Environment";
+import {SerialPort} from "../../environment/SerialPort";
 
-export const openSerialPort = async (path: string, args: string): Promise<SerialPort> => {
-  const serialPort = new SerialPort({
-    ...parseSerialPortOpenOptions(args),
-    autoOpen: false,
-    path,
+export const openSerialPort = async (path: string, args: string, env: Environment): Promise<SerialPort> => {
+  return env.openSerialPort(path, parseSerialPortOpenOptions(args)).catch(err => {
+    throw new TestScriptError(err.message, "HardwareError");
   });
-  return new Promise((resolve, reject) => serialPort.open(err => (err ? reject(new TestScriptError(err.message, "HardwareError")) : resolve(serialPort))));
 };
