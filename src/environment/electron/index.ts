@@ -1,4 +1,4 @@
-import {TestScriptError} from "./script/TestScriptError";
+import {TestScriptError} from "../../script/TestScriptError";
 
 const tests = {pass: 0, fail: 0};
 

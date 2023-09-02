@@ -1,9 +1,9 @@
 import {BrowserWindow} from "electron";
-import {TestScript} from "./script/TestScript";
-import {TestScriptEvent, TestScriptListenerMap} from "./script/TestScriptEvents";
-import {TestScriptBuilder} from "./TestScriptBuilder";
-import {TestScriptInterruptController} from "./script/TestScriptInterruptController";
-import {ElectronEnvironment} from "./environment/electron/ElectronEnvironment";
+import {TestScript} from "../../script/TestScript";
+import {TestScriptEvent, TestScriptListenerMap} from "../../script/TestScriptEvents";
+import {TestScriptBuilder} from "../../TestScriptBuilder";
+import {TestScriptInterruptController} from "../../script/TestScriptInterruptController";
+import {ElectronEnvironment} from "./ElectronEnvironment";
 
 const SCRIPTS: Record<number, {file: string; script: TestScript; controller: TestScriptInterruptController}> = {};
 

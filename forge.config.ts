@@ -53,11 +53,11 @@ const config: ForgeConfig = {
         config: rendererConfig,
         entryPoints: [
           {
-            html: "./src/index.html",
-            js: "./src/renderer.ts",
+            html: "./src/electron.html",
+            js: "./src/environment/electron/renderer.ts",
             name: "main_window",
             preload: {
-              js: "./src/preload.ts",
+              js: "./src/environment/electron/preload.ts",
             },
           },
         ],

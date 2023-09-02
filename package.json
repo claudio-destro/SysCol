@@ -9,6 +9,7 @@
     "make-electron": "electron-forge make",
     "start-tauri": "tauri dev",
     "make-tauri": "tauri build",
+    "tauri-dev": "vite",
     "lint": "eslint --ext .ts,.tsx . --fix",
     "test": "jest --rootDir=."
   },
