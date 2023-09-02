@@ -11,19 +11,18 @@ import {TestScriptInterruptSignal} from "./TestScriptInterruptController";
 import {parseInterval} from "./macros/parseInterval";
 import {openLogFile} from "./macros/openLogFile";
 import {TestScriptError} from "./TestScriptError";
-import {TestScriptBuilder} from "./TestScriptBuilder";
 import {TextFileWriter} from "../environment/TextFileWriter";
 import {Environment} from "../environment/Environment";
 import {SerialPort} from "../environment/SerialPort";
+import {loadScript} from "./macros/loadScript";
 
 const microseconds = () => (performance.now() * 1_000) | 0;
 
 export class TestScriptImpl implements TestScript {
   signal?: TestScriptInterruptSignal | null;
   readonly #events = new EventEmitter<string>();
-  readonly #path?: string | null;
-  readonly #data: Array<string>;
-  readonly #builder: TestScriptBuilder;
+  readonly #filePath?: string | null;
+  readonly #text: Array<string>;
   readonly #environment: Environment;
   #readyState: TestScriptReadyState = "new";
   #currentLine = 0;
@@ -31,15 +30,14 @@ export class TestScriptImpl implements TestScript {
   #serialPort?: SerialPort | null;
   #logFileWriter?: TextFileWriter | null;
 
-  constructor(path: string | null, data: string, builder: TestScriptBuilder, env: Environment) {
-    this.#path = path;
-    this.#data = data.split(/\r\n|\r|\n/gm);
-    this.#builder = builder;
+  constructor(path: string, text: string, env: Environment) {
+    this.#filePath = path;
+    this.#text = text.split(/\r\n|\r|\n/gm);
     this.#environment = env;
   }
 
   get filePath(): string | null {
-    return this.#path;
+    return this.#filePath;
   }
 
   get lineNumber(): number {
@@ -108,8 +106,8 @@ export class TestScriptImpl implements TestScript {
   }
 
   #nextLine(): string | null {
-    if (this.#currentLine >= this.#data.length) return null;
-    const row = this.#data[this.#currentLine++];
+    if (this.#currentLine >= this.#text.length) return null;
+    const row = this.#text[this.#currentLine++];
     const m = /^([^#]*)/.exec(row);
     return m && m[1].trim() ? m[1] : this.#nextLine();
   }
@@ -169,9 +167,7 @@ export class TestScriptImpl implements TestScript {
   }
 
   async #runScript(scriptFile: string): Promise<void> {
-    scriptFile = await this.#builder.resolve(scriptFile, this.filePath);
-    const script = await this.#builder.fromFile(scriptFile);
-    script.signal = this.signal;
+    const script: TestScript = await loadScript(this, scriptFile, this.#environment);
     this.#emit("message", "info", script.filePath.toString());
     this.#listeners("message").forEach(listener => script.on("message", listener));
     this.#listeners("command").forEach(listener => script.on("command", listener));

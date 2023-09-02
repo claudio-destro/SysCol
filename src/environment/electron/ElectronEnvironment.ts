@@ -7,17 +7,17 @@ import {TextFileWriterImpl} from "./TextFileWriterImpl";
 import {SerialPortOpenOptions} from "../../script/SerialPortOpenOptions";
 import {SerialPort} from "../SerialPort";
 
-export class TauriEnvironment implements Environment {
-  async readTextFile(base: string, file: string): Promise<string> {
-    base = dirname(base);
-    file = resolve(base, file);
+export class ElectronEnvironment implements Environment {
+  async resolvePath(base: string, file: string): Promise<string> {
+    return resolve(dirname(base), file);
+  }
+
+  async readTextFile(file: string): Promise<string> {
     const data: Buffer = await readFile(file);
     return data.toString("utf8");
   }
 
-  createTextFileWriter = async (base: string, file: string): Promise<TextFileWriter> => {
-    base = dirname(base);
-    file = resolve(base, file);
+  createTextFileWriter = async (file: string): Promise<TextFileWriter> => {
     return new TextFileWriterImpl(file);
   };
 

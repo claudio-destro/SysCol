@@ -1,10 +1,11 @@
 import {TestScript} from "../TestScript";
 import {Environment} from "../../environment/Environment";
 import {TextFileWriter} from "../../environment/TextFileWriter";
+import {TestScriptError} from "../TestScriptError";
 
 const now = (): string => new Date().toISOString().replace(/[-:]|\.\d+/g, "");
 
-const mungeFileName = (name: string): string => {
+const mungFileName = (name: string): string => {
   return name.replace(/\{\{([^}]+)}}/g, ($0, $1): string => {
     switch ($1) {
       case "now":
@@ -19,29 +20,34 @@ const prefix = (prefix: string, maxLength = 5, fillString = " "): string => pref
 
 const instant = (microseconds: number): string => `[${(microseconds / 1000).toFixed(1)}ms]`;
 
-export const openLogFile = async (script: TestScript, logFile: string, env: Environment): Promise<TextFileWriter> => {
-  const writer: TextFileWriter = await env.createTextFileWriter(script.filePath, mungeFileName(logFile));
+export const openLogFile = async (parentScript: TestScript, logFile: string, env: Environment): Promise<TextFileWriter> => {
+  let writer: TextFileWriter;
+  try {
+    logFile = await env.resolvePath(parentScript.filePath, logFile);
+    writer = await env.createTextFileWriter(mungFileName(logFile));
+  } catch (e) {
+    throw new TestScriptError(e.message, "FileError");
+  }
 
   const onCommand = (command: string) => writer.write(`${prefix("<<")} ${command}\r\n`);
   const onResponse = (response: string, elapsed: number) => writer.write(`${prefix(">>")} ${response} ${instant(elapsed)}\r\n`);
   const onTest = (response: string, passed: boolean, elapsed: number) => writer.write(`${prefix(passed ? "PASS" : "FAIL")} ${response} ${instant(elapsed)}\r\n`);
   const onMessage = (type: "error" | "info" | "log", message: string) => writer.write(`${prefix(type.toUpperCase())} ${(message ?? "").trim()}\r\n`);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const onError = (error: any) => onMessage("error", `${error} at line ${script.lineNumber}\r\n`);
+  const onError = (error: any) => onMessage("error", `${error} at line ${parentScript.lineNumber}\r\n`);
 
-  script.on("error", onError);
-  script.on("message", onMessage);
-  script.on("command", onCommand);
-  script.on("response", onResponse);
-  script.on("test", onTest);
+  parentScript.on("error", onError);
+  parentScript.on("message", onMessage);
+  parentScript.on("command", onCommand);
+  parentScript.on("response", onResponse);
+  parentScript.on("test", onTest);
 
-  const close = (): void => {
-    writer.close();
-    script.off("error", onError);
-    script.off("message", onMessage);
-    script.off("command", onCommand);
-    script.off("response", onResponse);
-    script.off("test", onTest);
+  writer.onclose = (): void => {
+    parentScript.off("error", onError);
+    parentScript.off("message", onMessage);
+    parentScript.off("command", onCommand);
+    parentScript.off("response", onResponse);
+    parentScript.off("test", onTest);
   };
 
   return writer;

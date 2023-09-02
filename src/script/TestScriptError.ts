@@ -1,6 +1,6 @@
 import {TestScript} from "./TestScript";
 
-export type TestScriptErrorName = "HardwareError" | "InterruptError" | "SyntaxError" | "TimeoutError";
+export type TestScriptErrorName = "FileError" | "HardwareError" | "InterruptError" | "SyntaxError" | "TimeoutError";
 
 export class TestScriptError {
   stack: Array<{fileName?: string | null; lineNumber: number}> = [];

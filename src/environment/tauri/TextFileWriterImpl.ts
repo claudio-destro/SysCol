@@ -13,11 +13,15 @@ export class TextFileWriterImpl implements TextFileWriter {
     return this.#filePath;
   }
 
+  onclose = (): void => {
+    /* EMPTY */
+  };
+
   async close(): Promise<void> {
     const path = this.filePath;
     const data = this.#chunks.join("");
     this.#chunks.length = 0;
-    return writeTextFile(path, data, {dir: BaseDirectory.Document});
+    return writeTextFile(path, data, {dir: BaseDirectory.Document}).finally(this.onclose);
   }
 
   async write(chunk: string): Promise<void> {

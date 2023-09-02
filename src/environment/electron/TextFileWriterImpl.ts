@@ -12,8 +12,12 @@ export class TextFileWriterImpl implements TextFileWriter {
     return this.#writer.path.toString();
   }
 
+  onclose = (): void => {
+    /* EMPTY */
+  };
+
   async close(): Promise<void> {
-    this.#writer.close();
+    this.#writer.close(this.onclose);
   }
 
   async write(chunk: string): Promise<void> {
