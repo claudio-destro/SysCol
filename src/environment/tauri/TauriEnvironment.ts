@@ -4,6 +4,7 @@ import {Environment} from "../Environment";
 import {TextFileWriter} from "../TextFileWriter";
 import {SerialPortOpenOptions} from "../../script/SerialPortOpenOptions";
 import {SerialPort} from "../SerialPort";
+import {TextFileWriterImpl} from "./TextFileWriterImpl";
 
 export class TauriEnvironment implements Environment {
   async resolvePath(base: string, file: string): Promise<string> {
@@ -15,9 +16,8 @@ export class TauriEnvironment implements Environment {
     return readTextFile(file);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async createTextFileWriter(file: string): Promise<TextFileWriter> {
-    throw new Error("Not yet implemented");
+    throw new TextFileWriterImpl(file);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
