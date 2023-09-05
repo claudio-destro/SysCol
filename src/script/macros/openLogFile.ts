@@ -2,6 +2,9 @@ import {TestScript} from "../TestScript";
 import {Environment} from "../../environment/Environment";
 import {TextFileWriter} from "../../environment/TextFileWriter";
 import {TestScriptError} from "../TestScriptError";
+import {TestScriptListenerMap} from "../TestScriptEvents";
+import {LogOutputType} from "../LogOutputType";
+import {parseCommandResponse} from "../protocol/parseCommandResponse";
 
 const now = (): string => new Date().toISOString().replace(/[-:]|\.\d+/g, "");
 
@@ -20,7 +23,11 @@ const prefix = (prefix: string, maxLength = 5, fillString = " "): string => pref
 
 const instant = (microseconds: number): string => `[${(microseconds / 1000).toFixed(1)}ms]`;
 
-export const openLogFile = async (parentScript: TestScript, logFile: string, env: Environment): Promise<TextFileWriter> => {
+const noop = () => {};
+
+const mapTest = (response: string): string => parseCommandResponse(response).argv[0].key;
+
+export const openLogFile = async (parentScript: TestScript, logFile: string, format: LogOutputType, env: Environment): Promise<TextFileWriter> => {
   let writer: TextFileWriter;
   try {
     logFile = await env.resolvePath(parentScript.filePath, logFile);
@@ -29,25 +36,42 @@ export const openLogFile = async (parentScript: TestScript, logFile: string, env
     throw new TestScriptError(e.message, "FileError");
   }
 
-  const onCommand = (command: string) => writer.write(`${prefix("<<")} ${command}\r\n`);
-  const onResponse = (response: string, elapsed: number) => writer.write(`${prefix(">>")} ${response} ${instant(elapsed)}\r\n`);
-  const onTest = (response: string, passed: boolean, elapsed: number) => writer.write(`${prefix(passed ? "PASS" : "FAIL")} ${response} ${instant(elapsed)}\r\n`);
-  const onMessage = (type: "error" | "info" | "log", message: string) => writer.write(`${prefix(type.toUpperCase())} ${(message ?? "").trim()}\r\n`);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const onError = (error: any) => onMessage("error", `${error} at line ${parentScript.lineNumber}\r\n`);
+  const formats: Record<LogOutputType, TestScriptListenerMap> = {
+    full: {
+      command: (command: string) => writer.write(`${prefix("<<")} ${command}\r\n`),
+      response: (response: string, elapsed: number) => writer.write(`${prefix(">>")} ${response} ${instant(elapsed)}\r\n`),
+      test: (response: string, passed: boolean, elapsed: number) => writer.write(`${prefix(passed ? "PASS" : "FAIL")} ${response} ${instant(elapsed)}\r\n`),
+      message: (type: "error" | "info" | "log", message: string) => writer.write(`${prefix(type.toUpperCase())} ${(message ?? "").trim()}\r\n`),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      error: (error: any) => writer.write(`${prefix("error")} ${error} at line ${parentScript.lineNumber}\r\n`),
+      start: noop,
+      stop: noop,
+    },
+    "tests-only": {
+      command: noop,
+      response: noop,
+      test: (response: string, passed: boolean) => writer.write(`# TEST ${mapTest(response)} ${passed ? "PASS" : "FAIL"}\r\n${response}\r\n`),
+      message: noop,
+      error: noop,
+      start: noop,
+      stop: noop,
+    },
+  };
 
-  parentScript.on("error", onError);
-  parentScript.on("message", onMessage);
-  parentScript.on("command", onCommand);
-  parentScript.on("response", onResponse);
-  parentScript.on("test", onTest);
+  const outputFormat = formats[format] ?? formats["tests-only"];
+
+  parentScript.on("error", outputFormat.error);
+  parentScript.on("message", outputFormat.message);
+  parentScript.on("command", outputFormat.command);
+  parentScript.on("response", outputFormat.response);
+  parentScript.on("test", outputFormat.test);
 
   writer.onclose = (): void => {
-    parentScript.off("error", onError);
-    parentScript.off("message", onMessage);
-    parentScript.off("command", onCommand);
-    parentScript.off("response", onResponse);
-    parentScript.off("test", onTest);
+    parentScript.off("error", outputFormat.error);
+    parentScript.off("message", outputFormat.message);
+    parentScript.off("command", outputFormat.command);
+    parentScript.off("response", outputFormat.response);
+    parentScript.off("test", outputFormat.test);
   };
 
   return writer;

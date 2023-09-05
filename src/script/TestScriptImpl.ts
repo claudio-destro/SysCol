@@ -15,6 +15,7 @@ import {TextFileWriter} from "../environment/TextFileWriter";
 import {Environment} from "../environment/Environment";
 import {SerialPort} from "../environment/SerialPort";
 import {loadScript} from "./macros/loadScript";
+import {LogOutputType} from "./LogOutputType";
 
 const microseconds = () => (performance.now() * 1_000) | 0;
 
@@ -135,7 +136,7 @@ export class TestScriptImpl implements TestScript {
             break;
           case "open_log_file":
             this.#emit("message", "info", row);
-            this.#logFileWriter = await openLogFile(this, argv[0], this.#environment);
+            this.#logFileWriter = await openLogFile(this, argv[0], argv[1] as LogOutputType, this.#environment);
             this.#emit("message", "info", this.#logFileWriter.filePath);
             break;
           case "open_serial_port":

@@ -1,11 +1,12 @@
 import {readFile} from "node:fs/promises";
 import {dirname, resolve} from "node:path";
-import {RegexParser, SerialPort as NodeSerialPort} from "serialport";
+import {RegexParser} from "serialport";
 import {Environment} from "../Environment";
 import {TextFileWriter} from "../TextFileWriter";
 import {TextFileWriterImpl} from "./TextFileWriterImpl";
 import {SerialPortOpenOptions} from "../../script/SerialPortOpenOptions";
 import {SerialPort} from "../SerialPort";
+import {newSerialPort} from "./newSerialPort";
 
 export class ElectronEnvironment implements Environment {
   async resolvePath(base: string, file: string): Promise<string> {
@@ -22,11 +23,7 @@ export class ElectronEnvironment implements Environment {
   };
 
   async openSerialPort(path: string, options: SerialPortOpenOptions): Promise<SerialPort> {
-    const port = new NodeSerialPort({
-      ...options,
-      autoOpen: false,
-      path,
-    });
+    const port = newSerialPort(path, options);
     const reader = port.pipe(new RegexParser({regex: /[\r\n]+/}));
     const comm: SerialPort = {
       async close(): Promise<void> {
