@@ -32,6 +32,7 @@ dependencies = [
  "serialport",
  "tauri",
  "tauri-build",
+ "thiserror",
 ]
 
 [[package]]

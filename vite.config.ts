@@ -1,13 +1,13 @@
-import { defineConfig } from "vite";
+import {defineConfig} from "vite";
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
   build: {
     rollupOptions: {
       input: {
-        app: "src/tauri.html"
-      }
-    }
+        app: "src/tauri.html",
+      },
+    },
   },
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
