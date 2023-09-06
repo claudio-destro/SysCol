@@ -4,7 +4,7 @@ import {TextFileWriter} from "../../environment/TextFileWriter";
 import {TestScriptError} from "../TestScriptError";
 import {TestScriptListenerMap} from "../TestScriptEvents";
 import {LogOutputType} from "../LogOutputType";
-import {parseCommandResponse} from "../protocol/parseCommandResponse";
+import {parseTestResponse} from "../protocol/parseCommandResponse";
 
 const now = (): string => new Date().toISOString().replace(/[-:]|\.\d+/g, "");
 
@@ -25,7 +25,7 @@ const instant = (microseconds: number): string => `[${(microseconds / 1000).toFi
 
 const noop = () => {};
 
-const mapTest = (response: string): string => parseCommandResponse(response).argv[0].key;
+const mapTestToLabel = (response: string): string => parseTestResponse(response).label;
 
 export const openLogFile = async (parentScript: TestScript, logFile: string, format: LogOutputType, env: Environment): Promise<TextFileWriter> => {
   let writer: TextFileWriter;
@@ -50,7 +50,7 @@ export const openLogFile = async (parentScript: TestScript, logFile: string, for
     "tests-only": {
       command: noop,
       response: noop,
-      test: (response: string, passed: boolean) => writer.write(`# TEST ${mapTest(response)} ${passed ? "PASS" : "FAIL"}\r\n${response}\r\n`),
+      test: (response: string, passed: boolean) => writer.write(`${passed ? "PASS" : "FAIL"} ${mapTestToLabel(response)}\r\n`),
       message: noop,
       error: noop,
       start: noop,

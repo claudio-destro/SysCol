@@ -6,3 +6,7 @@ export type CommandResponse = {
   argv: Array<CommandResponseArgument>;
   error: boolean;
 };
+
+export type TestResponse = CommandResponse & {
+  label: string;
+};
