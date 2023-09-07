@@ -29,7 +29,7 @@ export class TestScriptImpl implements TestScript {
   #currentLine = 0;
   #commandTimeout = 5000;
   #serialPort?: SerialPort | null;
-  #logFileWriter?: TextFileWriter | null;
+  #logFile?: TextFileWriter | null;
 
   constructor(path: string, text: string, env: Environment) {
     this.#filePath = path;
@@ -98,9 +98,9 @@ export class TestScriptImpl implements TestScript {
     } finally {
       this.#emit("stop");
       await this.#serialPort?.close();
-      await this.#logFileWriter?.close();
+      await this.#logFile?.close();
       this.#serialPort = null;
-      this.#logFileWriter = null;
+      this.#logFile = null;
       this.#currentLine = 0;
     }
   }
@@ -133,8 +133,8 @@ export class TestScriptImpl implements TestScript {
             break;
           case "close_log_file":
             this.#emit("message", "info", row);
-            await this.#logFileWriter?.close();
-            this.#logFileWriter = null;
+            await this.#logFile?.close();
+            this.#logFile = null;
             break;
           case "close_serial_port":
             this.#emit("message", "info", row);
@@ -143,8 +143,9 @@ export class TestScriptImpl implements TestScript {
             break;
           case "open_log_file":
             this.#emit("message", "info", row);
-            this.#logFileWriter = await openLogFile(this, argv[0], argv[1] as LogOutputType, this.#environment);
-            this.#emit("message", "info", this.#logFileWriter.filePath);
+            await this.#logFile?.close();
+            this.#logFile = await openLogFile(this, argv[0], argv[1] as LogOutputType, this.#environment);
+            this.#emit("message", "info", this.#logFile.filePath);
             break;
           case "open_serial_port":
             this.#emit("message", "info", row);
