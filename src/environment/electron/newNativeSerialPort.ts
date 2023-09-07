@@ -3,7 +3,7 @@ import {SerialPort, SerialPort as NodeSerialPort} from "serialport";
 import {SerialPortOpenOptions} from "../../script/SerialPortOpenOptions";
 import {SerialPortMock} from "./SerialPortMock";
 
-export const newSerialPort = (path: string, options: SerialPortOpenOptions): SerialPort => {
+export const newNativeSerialPort = (path: string, options: SerialPortOpenOptions): SerialPort => {
   const Ctor = env["NODE_ENV"] === "test" || env["NODE_ENV"] === "development" ? SerialPortMock : NodeSerialPort;
   return new Ctor({
     ...options,

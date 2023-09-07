@@ -17,7 +17,7 @@ import {SerialPort} from "../environment/SerialPort";
 import {loadScript} from "./macros/loadScript";
 import {LogOutputType} from "./LogOutputType";
 
-const microseconds = () => (performance.now() * 1_000) | 0;
+const getCurrentTimeInMicroseconds = () => (performance.now() * 1_000) | 0;
 
 export class TestScriptImpl implements TestScript {
   signal?: TestScriptInterruptSignal | null;
@@ -62,6 +62,13 @@ export class TestScriptImpl implements TestScript {
   }
 
   async execute(): Promise<void> {
+    return this.#executeScript().catch(err => {
+      this.#emit("error", err);
+      throw err;
+    });
+  }
+  
+  async #executeScript(): Promise<void> {
     this.#readyState = "running";
     this.#emit("start");
     try {
@@ -86,7 +93,7 @@ export class TestScriptImpl implements TestScript {
     } catch (e) {
       this.#readyState = "stopped";
       const err = e as TestScriptError;
-      if (!err?.addScript(this)) this.#emit("error", err);
+      err?.addScript(this);
       throw err;
     } finally {
       this.#emit("stop");
@@ -179,7 +186,7 @@ export class TestScriptImpl implements TestScript {
 
   async #sendCommandAndWaitResponse(cmd: string, timeout = this.#commandTimeout) {
     this.#emit("command", cmd);
-    const startTime = microseconds();
+    const startTime = getCurrentTimeInMicroseconds();
     await this.#serialPort?.write(cmd);
     let response: string | null;
     try {
@@ -187,7 +194,7 @@ export class TestScriptImpl implements TestScript {
     } catch (e) {
       throw new TestScriptError(e.message, "HardwareError");
     }
-    const endTime = microseconds();
+    const endTime = getCurrentTimeInMicroseconds();
     if (response === null) throw new TestScriptError(`"${cmd}" timed out after ${timeout}ms`, "TimeoutError");
     return {response, elapsed: endTime - startTime};
   }
