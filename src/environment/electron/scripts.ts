@@ -1,12 +1,11 @@
 import {BrowserWindow} from "electron";
-import {PathLike} from "node:fs";
-import {TestScript} from "./script/TestScript";
-import {TestScriptEvent, TestScriptListenerMap} from "./script/TestScriptEvents";
-import {TestScriptFactory} from "./script/TestScriptFactory";
-import {TestScriptInterruptControllerImpl} from "./script/TestScriptInterruptControllerImpl";
-import {TestScriptInterruptController} from "./script/TestScriptInterruptController";
+import {TestScript} from "../../script/TestScript";
+import {TestScriptEvent, TestScriptListenerMap} from "../../script/TestScriptEvents";
+import {TestScriptBuilder} from "../../TestScriptBuilder";
+import {TestScriptInterruptController} from "../../script/TestScriptInterruptController";
+import {ElectronEnvironment} from "./ElectronEnvironment";
 
-const SCRIPTS: Record<number, {file: PathLike; script: TestScript; controller: TestScriptInterruptController}> = {};
+const SCRIPTS: Record<number, {file: string; script: TestScript; controller: TestScriptInterruptController}> = {};
 
 const makeTestScriptEventListenerFactory = (script: TestScript, window: BrowserWindow) => {
   return <E extends TestScriptEvent>(event: E) => {
@@ -15,11 +14,11 @@ const makeTestScriptEventListenerFactory = (script: TestScript, window: BrowserW
   };
 };
 
-export const loadScript = async (file: PathLike, window: BrowserWindow) => {
+export const loadScript = async (file: string, window: BrowserWindow) => {
   console.log(`Load script ${JSON.stringify(file)} into window "${window.id}"`);
-  const script = await TestScriptFactory.fromFile(file);
-  const controller = new TestScriptInterruptControllerImpl();
-  script.signal = controller.signal;
+  const builder: TestScriptBuilder = new TestScriptBuilder(new ElectronEnvironment());
+  const script: TestScript = await builder.loadTestScript(file);
+  const controller: TestScriptInterruptController = await builder.attachInterruptController(script);
   window.webContents.send("setScriptFileName", file);
   const makeTestScriptEventListener = makeTestScriptEventListenerFactory(script, window);
   script.on("error", makeTestScriptEventListener("error"));
@@ -38,7 +37,7 @@ export const reloadScript = async (window: BrowserWindow) => {
   if (file) await loadScript(file, window);
 };
 
-export const executeScript = async (window: BrowserWindow) => SCRIPTS[window.id]?.script.execute().catch(e => console.error(e.toString()));
+export const executeScript = async (window: BrowserWindow) => SCRIPTS[window.id]?.script.execute().catch(console.error);
 
 export const interruptScript = async (window: BrowserWindow) => {
   const store = SCRIPTS[window.id];

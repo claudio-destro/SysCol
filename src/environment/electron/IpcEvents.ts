@@ -1,4 +1,4 @@
-import {TestScriptEvent, TestScriptListeners} from "./script/TestScriptEvents";
+import {TestScriptEvent, TestScriptListeners} from "../../script/TestScriptEvents";
 
 /*
  * Events from renderer to main

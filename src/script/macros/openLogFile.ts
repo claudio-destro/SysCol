@@ -1,18 +1,16 @@
-import {app} from "electron";
-import {dirname, resolve} from "node:path";
-import {createWriteStream} from "node:fs";
-import {LogFile} from "../LogFile";
 import {TestScript} from "../TestScript";
-import {randomInt} from "crypto";
+import {Environment} from "../../environment/Environment";
+import {TextFileWriter} from "../../environment/TextFileWriter";
+import {TestScriptError} from "../TestScriptError";
+import {TestScriptListenerMap} from "../TestScriptEvents";
+import {LogOutputType} from "../LogOutputType";
+import {parseTestResponse} from "../protocol/parseCommandResponse";
 
 const now = (): string => new Date().toISOString().replace(/[-:]|\.\d+/g, "");
-const rnd = (): string => "" + randomInt(0, 1_000_000);
 
-const mungeFileName = (name: string): string => {
+const mungFileName = (name: string): string => {
   return name.replace(/\{\{([^}]+)}}/g, ($0, $1): string => {
     switch ($1) {
-      case "rnd":
-        return rnd();
       case "now":
         return now();
       default:
@@ -25,39 +23,56 @@ const prefix = (prefix: string, maxLength = 5, fillString = " "): string => pref
 
 const instant = (microseconds: number): string => `[${(microseconds / 1000).toFixed(1)}ms]`;
 
-export const openLogFile = async (script: TestScript, logFile: string): Promise<LogFile> => {
-  const {filePath: basePath} = script;
-  const basedir = typeof basePath === "string" || basePath instanceof Buffer ? dirname(basePath.toString()) : app.getPath("logs");
-  const path = resolve(basedir, mungeFileName(logFile));
-  const writer = createWriteStream(path);
+const noop = () => {};
 
-  const onCommand = (command: string) => writer.write(`${prefix("<<")} ${command}\r\n`);
-  const onResponse = (response: string, elapsed: number) => writer.write(`${prefix(">>")} ${response} ${instant(elapsed)}\r\n`);
-  const onTest = (response: string, passed: boolean, elapsed: number) => writer.write(`${prefix(passed ? "PASS" : "FAIL")} ${response} ${instant(elapsed)}\r\n`);
-  const onMessage = (type: "error" | "info" | "log", message: string) => writer.write(`${prefix(type.toUpperCase())} ${(message ?? "").trim()}\r\n`);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const onError = (error: any) => onMessage("error", `${error} at line ${script.lineNumber}\r\n`);
+const mapTestToLabel = (response: string): string => parseTestResponse(response).label;
 
-  script.on("error", onError);
-  script.on("message", onMessage);
-  script.on("command", onCommand);
-  script.on("response", onResponse);
-  script.on("test", onTest);
+export const openLogFile = async (parentScript: TestScript, logFile: string, format: LogOutputType, env: Environment): Promise<TextFileWriter> => {
+  let writer: TextFileWriter;
+  try {
+    logFile = await env.resolvePath(parentScript.filePath, logFile);
+    writer = await env.createTextFileWriter(mungFileName(logFile));
+  } catch (e) {
+    throw new TestScriptError(e.message, "FileError");
+  }
 
-  const close = (): void => {
-    writer.close();
-    script.off("error", onError);
-    script.off("message", onMessage);
-    script.off("command", onCommand);
-    script.off("response", onResponse);
-    script.off("test", onTest);
-  };
-
-  return {
-    path,
-    write(message: string): void {
-      writer.write(message);
+  const formats: Record<LogOutputType, TestScriptListenerMap> = {
+    full: {
+      command: (command: string) => writer.write(`${prefix("<<")} ${command}\r\n`),
+      response: (response: string, elapsed: number) => writer.write(`${prefix(">>")} ${response} ${instant(elapsed)}\r\n`),
+      test: (response: string, passed: boolean, elapsed: number) => writer.write(`${prefix(passed ? "PASS" : "FAIL")} ${response} ${instant(elapsed)}\r\n`),
+      message: (type: "error" | "info" | "log", message: string) => writer.write(`${prefix(type.toUpperCase())} ${(message ?? "").trim()}\r\n`),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      error: (error: any) => writer.write(`${prefix("error")} ${error} at line ${parentScript.lineNumber}\r\n`),
+      start: noop,
+      stop: noop,
     },
-    close,
+    "tests-only": {
+      command: noop,
+      response: noop,
+      test: (response: string, passed: boolean) => writer.write(`${passed ? "PASS" : "FAIL"} ${mapTestToLabel(response)}\r\n`),
+      message: noop,
+      error: noop,
+      start: noop,
+      stop: noop,
+    },
   };
+
+  const outputFormat = formats[format] ?? formats["tests-only"];
+
+  parentScript.on("error", outputFormat.error);
+  parentScript.on("message", outputFormat.message);
+  parentScript.on("command", outputFormat.command);
+  parentScript.on("response", outputFormat.response);
+  parentScript.on("test", outputFormat.test);
+
+  writer.onclose = (): void => {
+    parentScript.off("error", outputFormat.error);
+    parentScript.off("message", outputFormat.message);
+    parentScript.off("command", outputFormat.command);
+    parentScript.off("response", outputFormat.response);
+    parentScript.off("test", outputFormat.test);
+  };
+
+  return writer;
 };

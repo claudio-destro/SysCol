@@ -1,8 +1,4 @@
-import EventEmitter from "node:events";
-import {cwd, hrtime} from "node:process";
-import {dirname, resolve} from "node:path";
-import {PathLike} from "node:fs";
-import {RegexParser, SerialPort} from "serialport";
+import EventEmitter from "eventemitter3";
 import {openSerialPort} from "./macros/openSerialPort";
 import {parseCommand} from "./protocol/parseCommand";
 import {parseCommandResponse} from "./protocol/parseCommandResponse";
@@ -12,39 +8,37 @@ import {getTestResult} from "./protocol/getTestResult";
 import {TestScript, TestScriptReadyState} from "./TestScript";
 import {TestScriptEvent, TestScriptListenerMap, TestScriptListeners} from "./TestScriptEvents";
 import {TestScriptInterruptSignal} from "./TestScriptInterruptController";
-import {TestScriptFactory} from "./TestScriptFactory";
 import {parseInterval} from "./macros/parseInterval";
 import {openLogFile} from "./macros/openLogFile";
-import {LogFile} from "./LogFile";
 import {TestScriptError} from "./TestScriptError";
+import {TextFileWriter} from "../environment/TextFileWriter";
+import {Environment} from "../environment/Environment";
+import {SerialPort} from "../environment/SerialPort";
+import {loadScript} from "./macros/loadScript";
+import {LogOutputType} from "./LogOutputType";
 
-const hrtimeToMicroseconds = ([n, m]: [number, number]): number => n * 1000000 + m / 1000;
-
-const resolvePathAgainstScript = (script: TestScript, file: string): string => {
-  const {filePath: basePath} = script;
-  const basedir = typeof basePath === "string" || basePath instanceof Buffer ? dirname(basePath.toString()) : cwd();
-  return resolve(basedir, file);
-};
+const getCurrentTimeInMicroseconds = () => (performance.now() * 1_000) | 0;
 
 export class TestScriptImpl implements TestScript {
   signal?: TestScriptInterruptSignal | null;
-  readonly #events = new EventEmitter();
-  readonly #path?: PathLike | null;
-  readonly #data: Array<string>;
+  readonly #events = new EventEmitter<string>();
+  readonly #filePath?: string | null;
+  readonly #text: Array<string>;
+  readonly #environment: Environment;
   #readyState: TestScriptReadyState = "new";
   #currentLine = 0;
   #commandTimeout = 5000;
   #serialPort?: SerialPort | null;
-  #serialPortReader?: RegexParser | null;
-  #logFileWriter?: LogFile | null;
+  #logFile?: TextFileWriter | null;
 
-  constructor(path: PathLike | null, data: string | Buffer) {
-    this.#path = path;
-    this.#data = data.toString().split(/\r\n|\r|\n/gm);
+  constructor(path: string, text: string, env: Environment) {
+    this.#filePath = path;
+    this.#text = text.split(/\r\n|\r|\n/gm);
+    this.#environment = env;
   }
 
-  get filePath(): PathLike | null {
-    return this.#path;
+  get filePath(): string | null {
+    return this.#filePath;
   }
 
   get lineNumber(): number {
@@ -68,6 +62,13 @@ export class TestScriptImpl implements TestScript {
   }
 
   async execute(): Promise<void> {
+    return this.#executeScript().catch(err => {
+      this.#emit("error", err);
+      throw err;
+    });
+  }
+  
+  async #executeScript(): Promise<void> {
     this.#readyState = "running";
     this.#emit("start");
     try {
@@ -92,16 +93,14 @@ export class TestScriptImpl implements TestScript {
     } catch (e) {
       this.#readyState = "stopped";
       const err = e as TestScriptError;
-      if (!err?.addScript(this)) this.#emit("error", err);
+      err?.addScript(this);
       throw err;
     } finally {
       this.#emit("stop");
-      this.#serialPort?.close();
-      this.#serialPortReader?.destroy();
-      this.#logFileWriter?.close();
+      await this.#serialPort?.close();
+      await this.#logFile?.close();
       this.#serialPort = null;
-      this.#serialPortReader = null;
-      this.#logFileWriter = null;
+      this.#logFile = null;
       this.#currentLine = 0;
     }
   }
@@ -115,8 +114,8 @@ export class TestScriptImpl implements TestScript {
   }
 
   #nextLine(): string | null {
-    if (this.#currentLine >= this.#data.length) return null;
-    const row = this.#data[this.#currentLine++];
+    if (this.#currentLine >= this.#text.length) return null;
+    const row = this.#text[this.#currentLine++];
     const m = /^([^#]*)/.exec(row);
     return m && m[1].trim() ? m[1] : this.#nextLine();
   }
@@ -134,24 +133,24 @@ export class TestScriptImpl implements TestScript {
             break;
           case "close_log_file":
             this.#emit("message", "info", row);
-            this.#logFileWriter?.close();
-            this.#logFileWriter = null;
+            await this.#logFile?.close();
+            this.#logFile = null;
             break;
           case "close_serial_port":
             this.#emit("message", "info", row);
-            this.#serialPort?.close();
+            await this.#serialPort?.close();
             this.#serialPort = null;
             break;
           case "open_log_file":
             this.#emit("message", "info", row);
-            this.#logFileWriter = await openLogFile(this, argv[0]);
-            this.#emit("message", "info", this.#logFileWriter.path);
+            await this.#logFile?.close();
+            this.#logFile = await openLogFile(this, argv[0], argv[1] as LogOutputType, this.#environment);
+            this.#emit("message", "info", this.#logFile.filePath);
             break;
           case "open_serial_port":
             this.#emit("message", "info", row);
-            this.#serialPort?.close();
-            this.#serialPort = await openSerialPort(argv[0], argv[1]);
-            this.#serialPortReader = this.#serialPort.pipe(new RegexParser({regex: /[\r\n]+/}));
+            await this.#serialPort?.close();
+            this.#serialPort = await openSerialPort(argv[0], argv[1], this.#environment);
             break;
           case "run_script":
             this.#emit("message", "info", row);
@@ -177,8 +176,7 @@ export class TestScriptImpl implements TestScript {
   }
 
   async #runScript(scriptFile: string): Promise<void> {
-    const script = await TestScriptFactory.fromFile(resolvePathAgainstScript(this, scriptFile));
-    script.signal = this.signal;
+    const script: TestScript = await loadScript(this, scriptFile, this.#environment);
     this.#emit("message", "info", script.filePath.toString());
     this.#listeners("message").forEach(listener => script.on("message", listener));
     this.#listeners("command").forEach(listener => script.on("command", listener));
@@ -189,40 +187,16 @@ export class TestScriptImpl implements TestScript {
 
   async #sendCommandAndWaitResponse(cmd: string, timeout = this.#commandTimeout) {
     this.#emit("command", cmd);
-    return new Promise<{response: string; elapsed: number}>((resolve, reject) => {
-      const startTime = hrtimeToMicroseconds(hrtime());
-
-      const onData = (response: string | Buffer): void => {
-        const endTime = hrtimeToMicroseconds(hrtime());
-        // eslint-disable-next-line no-use-before-define
-        this.#serialPortReader?.off("error", onError);
-        // eslint-disable-next-line no-use-before-define
-        clearTimeout(id);
-        resolve({
-          response: response.toString(),
-          elapsed: endTime - startTime,
-        });
-      };
-
-      const onError = (error: Error): void => {
-        // eslint-disable-next-line no-use-before-define
-        this.#serialPortReader?.off("data", onData);
-        // eslint-disable-next-line no-use-before-define
-        clearTimeout(id);
-        reject(error);
-      };
-
-      const id = setTimeout(() => {
-        this.#serialPortReader?.off("data", onData);
-        this.#serialPortReader?.off("error", onError);
-        reject(new TestScriptError(`"${cmd}" timed out after ${timeout}ms`, "TimeoutError"));
-      }, timeout);
-
-      this.#serialPortReader?.once("data", onData);
-      this.#serialPortReader?.once("error", onError);
-
-      this.#serialPort?.write(cmd);
-      this.#serialPort?.drain();
-    });
+    const startTime = getCurrentTimeInMicroseconds();
+    await this.#serialPort?.write(cmd);
+    let response: string | null;
+    try {
+      response = await this.#serialPort.read(timeout);
+    } catch (e) {
+      throw new TestScriptError(e.message, "HardwareError");
+    }
+    const endTime = getCurrentTimeInMicroseconds();
+    if (response === null) throw new TestScriptError(`"${cmd}" timed out after ${timeout}ms`, "TimeoutError");
+    return {response, elapsed: endTime - startTime};
   }
 }

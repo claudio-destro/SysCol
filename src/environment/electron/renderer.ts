@@ -26,7 +26,7 @@
  * ```
  */
 
-import "./index.css";
+import "../../index.css";
 
 import {clearLogs, getTestResults, logCommand, logCommandResponse, logError, logMessage, logStatus, logTest} from "./index";
 

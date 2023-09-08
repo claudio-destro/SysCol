@@ -1,5 +1,6 @@
-import {CommandResponse, CommandResponseArgument} from "../CommandResponse";
+import {CommandResponse, CommandResponseArgument, TestResponse} from "../CommandResponse";
 import {TestScriptError} from "../TestScriptError";
+import {makeTestResponse} from "./makeTestResponse";
 
 const parseArgument = (arg: string): CommandResponseArgument => {
   const m = /^\s*([^:]*)(?::([^ ]+))?\s*$/.exec(arg);
@@ -58,4 +59,10 @@ export const parseCommandResponse = (str: string): CommandResponse => {
     }
   }
   throw new TestScriptError(`Unrecognized response ${JSON.stringify(str)}`, "SyntaxError");
+};
+
+export const parseTestResponse = (str: string): TestResponse => {
+  const response: CommandResponse = parseCommandResponse(str);
+  if (response.command === "tst") return makeTestResponse(response);
+  throw new TestScriptError(`Not a TST response ${JSON.stringify(str)}`, "SyntaxError");
 };
