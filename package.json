@@ -1,7 +1,7 @@
 {
-  "name": "SysCol",
+  "name": "sys_col",
   "productName": "SysCol",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "SysCol Desktop",
   "main": ".webpack/main",
   "scripts": {
@@ -16,13 +16,7 @@
     "test": "jest --rootDir=."
   },
   "keywords": [],
-  "authors": [{
-    "name": "Mauro Destro",
-    "email": "info@vlabsistemi.com"
-  }, {
-    "name": "Claudio Destro",
-    "email": "claudio.destro@gmail.com"
-  }],
+  "author": "V Lab Sistemi <info@vlabsistemi.com>",
   "dependencies": {
     "electron-squirrel-startup": "^1.0.0",
     "electron-store": "^8.1.0",
