@@ -77,6 +77,7 @@ A macro starts with a `@`.
 
 - `@close_log_file` - close the log file
 - `@close_serial_port` - close the COM port
+- `@echo` - print a debug text line
 - `@open_log_file FILENAME FORMAT` - write a log file in the given format (`full` or `tests-only`) 
 - `@open_serial_port COM BAUD_RATE-START_BITS-PARITY-STOP_BITS` - open the given COM port
 - `@run_script SCRIPT_FILE` - run sub script (serial port can be reused)

@@ -19,7 +19,9 @@ const loadScriptAndOpenWindowIfNecessary = async (window?: BrowserWindow | null)
 const reloadAndExecuteScript = (window?: BrowserWindow | null): void => {
   if (window) {
     window.webContents.once("did-finish-load", () => {
-      reloadScript(window).then(() => executeScript(window)).catch(console.error)
+      reloadScript(window)
+        .then(() => executeScript(window))
+        .catch(console.error);
     });
     window.reload();
   }

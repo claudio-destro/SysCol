@@ -18,7 +18,9 @@ const prefix = (prefix: string, maxLength = 5, fillString = " "): string => pref
 
 const instant = (microseconds: number): string => `[${(microseconds / 1000).toFixed(1)}ms]`;
 
-const noop = () => { /* EMPTY */ };
+const noop = () => {
+  /* EMPTY */
+};
 
 const mapTestToLabel = (response: string): string => parseTestResponse(response).label;
 

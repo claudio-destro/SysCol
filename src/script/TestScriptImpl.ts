@@ -125,9 +125,9 @@ export class TestScriptImpl implements TestScript {
       this.signal?.throwIfInterrupted();
       const row = this.#nextLine();
       if (row === null) return;
-      const {command, commandLine, argv} = parseCommand(row);
-      if (/^@/.exec(command)) {
-        switch (command.substring(1)) {
+      const {command, commandLine, argv, macro} = parseCommand(row);
+      if (macro) {
+        switch (command) {
           case "echo":
             this.#emit("message", "log", commandLine);
             break;
