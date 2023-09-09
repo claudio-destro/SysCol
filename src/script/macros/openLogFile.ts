@@ -6,12 +6,12 @@ import {TestScriptListenerMap} from "../TestScriptEvents";
 import {LogOutputType} from "../LogOutputType";
 import {parseTestResponse} from "../protocol/parseCommandResponse";
 
-const now = (): string => new Date().toISOString().replace(/[-:]|\.\d+/g, "");
+const FILE_NAME_PLACEHOLDERS: Record<string, () => string> = {
+  now: (): string => new Date().toISOString().replace(/[-:]|\.\d+/g, ""),
+};
 
 const mungFileName = (name: string): string => {
-  return name.replace(/\{\{([^}]+)}}/g, ($0, $1): string => {
-    return $1 === "now" ? now() : $0;
-  });
+  return name.replace(/\{\{([^}]+)}}/g, ($0, $1): string => FILE_NAME_PLACEHOLDERS[$1]?.() ?? $0);
 };
 
 const prefix = (prefix: string, maxLength = 5, fillString = " "): string => prefix.padStart(maxLength, fillString);
@@ -22,44 +22,40 @@ const noop = () => {
   /* EMPTY */
 };
 
+const EOL = "\r\n";
+
 const mapTestToLabel = (response: string): string => parseTestResponse(response).label;
 
 export const openLogFile = async (parentScript: TestScript, logFile: string, format: LogOutputType, env: Environment): Promise<TextFileWriter> => {
   let writer: TextFileWriter;
   try {
     logFile = await env.resolvePath(parentScript.filePath, logFile);
-    writer = await env.createTextFileWriter(mungFileName(logFile));
+    logFile = mungFileName(logFile);
+    console.log(`Open log file ${logFile}`);
+    writer = await env.createTextFileWriter(logFile);
   } catch (e) {
     throw new TestScriptError(e.message, "FileError", e);
   }
 
+  const writeln = (str: string): void => {
+    writer.write(`${str}${EOL}`).catch(console.error);
+  };
+
   const formats: Record<LogOutputType, TestScriptListenerMap> = {
     full: {
-      command: (command: string) => {
-        writer.write(`${prefix("<<")} ${command}\r\n`);
-      },
-      response: (response: string, elapsed: number) => {
-        writer.write(`${prefix(">>")} ${response} ${instant(elapsed)}\r\n`);
-      },
-      test: (response: string, passed: boolean, elapsed: number) => {
-        writer.write(`${prefix(passed ? "PASS" : "FAIL")} ${response} ${instant(elapsed)}\r\n`);
-      },
-      message: (type: "error" | "info" | "log", message: string) => {
-        writer.write(`${prefix(type.toUpperCase())} ${(message ?? "").trim()}\r\n`);
-      },
+      command: (command: string) => writeln(`${prefix("<<")} ${command}`),
+      response: (response: string, elapsed: number) => writeln(`${prefix(">>")} ${response} ${instant(elapsed)}`),
+      test: (response: string, passed: boolean, elapsed: number) => writeln(`${prefix(passed ? "PASS" : "FAIL")} ${response} ${instant(elapsed)}`),
+      message: (type: "error" | "info" | "log", message: string) => writeln(`${prefix(type.toUpperCase())} ${(message ?? "").trim()}`),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      error: (error: any) => {
-        writer.write(`${prefix("error")} ${error}\r\n`);
-      },
+      error: (error: any) => writeln(`${prefix("error")} ${error}`),
       start: noop,
       stop: noop,
     },
     "tests-only": {
       command: noop,
       response: noop,
-      test: (response: string, passed: boolean): void => {
-        writer.write(`# ${mapTestToLabel(response)} ${passed ? "PASS" : "FAIL"}\r\n${response}\r\n`);
-      },
+      test: (response: string, passed: boolean): void => writeln(`# ${mapTestToLabel(response)} ${passed ? "PASS" : "FAIL"}${EOL}${response}`),
       message: noop,
       error: noop,
       start: noop,
@@ -75,13 +71,14 @@ export const openLogFile = async (parentScript: TestScript, logFile: string, for
   parentScript.on("response", outputFormat.response);
   parentScript.on("test", outputFormat.test);
 
-  writer.onclose = (): void => {
+  writer.once("close", (): void => {
     parentScript.off("error", outputFormat.error);
     parentScript.off("message", outputFormat.message);
     parentScript.off("command", outputFormat.command);
     parentScript.off("response", outputFormat.response);
     parentScript.off("test", outputFormat.test);
-  };
+    console.log(`Close log file ${logFile}`);
+  });
 
   return writer;
 };
