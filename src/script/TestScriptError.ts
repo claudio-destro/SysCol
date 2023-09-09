@@ -21,6 +21,7 @@ export class TestScriptError {
   }
 
   toString(): string {
-    return `${this.name}: ${this.message}\n${this.stack.map(({fileName, lineNumber}) => `\tat ${fileName}:${lineNumber}`).join("\n")}`;
+    const stack = this.stack.map(({fileName, lineNumber}) => `\tat ${fileName}:${lineNumber}`);
+    return `${this.name}: ${this.message}\n${stack.join("\n")}`;
   }
 }

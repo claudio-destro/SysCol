@@ -62,14 +62,18 @@ export class TestScriptImpl implements TestScript {
   }
 
   async execute(): Promise<void> {
-    return this.#executeScript().catch(err => {
-      this.#emit("error", err);
-      throw err;
-    }).finally(() => this.#logFile?.close())
-      .finally( () => {
-      this.#logFile = null;
-      this.#currentLine = 0;
-    });
+    return this.#executeScript()
+      .catch(err => {
+        this.#emit("error", err);
+        throw err;
+      })
+      .finally(() => {
+        this.#logFile?.close();
+      })
+      .finally(() => {
+        this.#logFile = null;
+        this.#currentLine = 0;
+      });
   }
 
   async #executeScript(): Promise<void> {
