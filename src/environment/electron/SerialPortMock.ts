@@ -138,7 +138,7 @@ class TestSerialPortMock extends SerialPortMock {
       const command: string = (chunk as Buffer).toString(params.encoding);
       const response: string = COMMAND_RESPONSE[command];
       const rnd = Math.random();
-      const data = `${response ?? command.toUpperCase()}${rnd <= 0.333 ? "\r" : rnd <= 0.666 ? "\n" : "\r\n"}`;
+      const data = `${response ?? command.toUpperCase()}${rnd <= 0.333 ? "\r" : rnd <= 0.666 ? "\n" : "\r\n"}`; // NOSONAR
       console.log(`<< ${JSON.stringify(command)}`);
       this.port.emitData(data);
       console.log(`>> ${JSON.stringify(data)}`);

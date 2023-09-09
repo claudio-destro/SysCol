@@ -18,12 +18,12 @@ const loadScriptAndOpenWindowIfNecessary = async (window?: BrowserWindow | null)
 
 const reloadAndExecuteScript = (window?: BrowserWindow | null): void => {
   if (window) {
-    window.webContents.once("did-finish-load", () => reloadScript(window).then(() => executeScript(window)));
+    window.webContents.once("did-finish-load", () => {
+      reloadScript(window).then(() => executeScript(window)).catch(console.error)
+    });
     window.reload();
   }
 };
-
-// const clearLogs = (window: BrowserWindow | null): void => window?.webContents.send("clearLogs");
 
 const template: Array<MenuItemConstructorOptions> = [
   {
@@ -33,13 +33,17 @@ const template: Array<MenuItemConstructorOptions> = [
         id: "newScript",
         label: "New Window",
         accelerator: "CommandOrControl+N",
-        click: () => loadScriptAndOpenWindowIfNecessary(),
+        click: () => {
+          loadScriptAndOpenWindowIfNecessary().catch(console.error);
+        },
       },
       {
         id: "openScript",
         label: "Open Script",
         accelerator: "CommandOrControl+O",
-        click: () => loadScriptAndOpenWindowIfNecessary(BrowserWindow.getFocusedWindow()),
+        click: () => {
+          loadScriptAndOpenWindowIfNecessary(BrowserWindow.getFocusedWindow()).catch(console.error);
+        },
       },
       isMac ? {role: "close"} : {role: "quit"},
     ],
@@ -58,7 +62,9 @@ const template: Array<MenuItemConstructorOptions> = [
         id: "interruptScript",
         label: "Interrupt",
         accelerator: isMac ? "Command+." : "F8",
-        click: () => interruptScript(BrowserWindow.getFocusedWindow()),
+        click: () => {
+          interruptScript(BrowserWindow.getFocusedWindow()).catch(console.error);
+        },
       },
       // {
       //   id: "clearLogs",
@@ -77,7 +83,6 @@ const menu = Menu.buildFromTemplate(template);
 export const createMenu = (): void => Menu.setApplicationMenu(menu);
 
 const setMenuItemsEnabled = (enabled: boolean): void => {
-  // menu.getMenuItemById("clearLogs").enabled = enabled;
   menu.getMenuItemById("executeScript").enabled = enabled;
   menu.getMenuItemById("openScript").enabled = enabled;
 };

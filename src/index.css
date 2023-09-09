@@ -58,6 +58,7 @@ html, body {
 
 
 .sys_col_row:hover {
+  /* EMPTY */
 }
 
 /*
@@ -65,6 +66,7 @@ html, body {
  */
 
 .sys_col_command {
+  /* EMPTY */
 }
 
 /*
@@ -72,14 +74,17 @@ html, body {
  */
 
 .sys_col_response {
+  /* EMPTY */
 }
 
 .sys_col_response.pass {
+  /* EMPTY */
 }
 
 .sys_col_response.fail,
 .sys_col_message.error,
 .sys_col_message.stack {
+  /* EMPTY */
 }
 
 .sys_col_message.stack {

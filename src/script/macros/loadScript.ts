@@ -9,7 +9,7 @@ export const loadScript = async (parentScript: TestScript, scriptFile: string, e
     scriptFile = await env.resolvePath(parentScript.filePath, scriptFile);
     text = await env.readTextFile(scriptFile);
   } catch (e) {
-    throw new TestScriptError(e.message, "FileError");
+    throw new TestScriptError(e.message, "FileError", e);
   }
   const script: TestScript = new TestScriptImpl(scriptFile, text, env);
   script.signal = parentScript.signal;

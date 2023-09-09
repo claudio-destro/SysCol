@@ -7,6 +7,6 @@ describe("parseSerialPortOpenOptions", () => {
     expect(options.baudRate).toEqual(9600);
     expect(options.dataBits).toEqual(8);
     expect(options.parity).toEqual("none");
-    expect(options.stopBit).toEqual(1);
+    expect(options.stopBits).toEqual(1);
   });
 });

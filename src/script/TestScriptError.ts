@@ -8,19 +8,15 @@ export class TestScriptError {
   constructor(
     public message: string,
     public name: TestScriptErrorName,
+    public cause?: Error,
   ) {
     /* EMPTY */
   }
 
-  addScript(script: TestScript): boolean {
+  addScript(script: TestScript): void {
     this.stack.push({
       fileName: script.filePath?.toString(),
       lineNumber: script.lineNumber,
     });
-    return this.stack.length === 1;
-  }
-
-  toString(): string {
-    return `${this.name}: ${this.message}\n${this.stack.map(({fileName, lineNumber}) => `\tat ${fileName}:${lineNumber}`).join("\n")}`;
   }
 }

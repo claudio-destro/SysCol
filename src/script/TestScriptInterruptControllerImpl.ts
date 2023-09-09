@@ -16,13 +16,15 @@ class TestScriptInterruptSignalImpl implements TestScriptInterruptSignal {
     return this.#interrupt.interrupted;
   }
 
+  // prettier-ignore
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  get reason(): any | undefined {
+  get reason(): any | undefined { // NOSONAR
     return this.#interrupt.interrupted ? this.#reason ?? new TestScriptError("Interrupted", "InterruptError") : undefined;
   }
 
+  // prettier-ignore
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  set reason(reason: any | undefined) {
+  set reason(reason: any | undefined) { // NOSONAR
     this.#reason = reason;
   }
 

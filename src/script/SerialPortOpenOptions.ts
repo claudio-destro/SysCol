@@ -6,5 +6,5 @@ export type SerialPortOpenOptions = {
   baudRate: number;
   dataBits: SerialPortDataBits;
   parity: SerialPortParity;
-  stopBit: SerialPortStopBits;
+  stopBits: SerialPortStopBits;
 };

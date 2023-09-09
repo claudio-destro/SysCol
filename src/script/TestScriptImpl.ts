@@ -67,7 +67,7 @@ export class TestScriptImpl implements TestScript {
       throw err;
     });
   }
-  
+
   async #executeScript(): Promise<void> {
     this.#readyState = "running";
     this.#emit("start");
@@ -117,7 +117,7 @@ export class TestScriptImpl implements TestScript {
     if (this.#currentLine >= this.#text.length) return null;
     const row = this.#text[this.#currentLine++];
     const m = /^([^#]*)/.exec(row);
-    return m && m[1].trim() ? m[1] : this.#nextLine();
+    return m?.[1].trim() ? m[1] : this.#nextLine();
   }
 
   async *#executeSingleCommand() {
@@ -126,7 +126,7 @@ export class TestScriptImpl implements TestScript {
       const row = this.#nextLine();
       if (row === null) return;
       const {command, commandLine, argv} = parseCommand(row);
-      if (command.match(/^@/)) {
+      if (/^@/.exec(command)) {
         switch (command.substring(1)) {
           case "echo":
             this.#emit("message", "log", commandLine);
@@ -187,13 +187,14 @@ export class TestScriptImpl implements TestScript {
 
   async #sendCommandAndWaitResponse(cmd: string, timeout = this.#commandTimeout) {
     this.#emit("command", cmd);
+    if (!this.#serialPort) throw new TestScriptError("Serial port not open", "SyntaxError");
     const startTime = getCurrentTimeInMicroseconds();
-    await this.#serialPort?.write(cmd);
+    await this.#serialPort.write(cmd);
     let response: string | null;
     try {
       response = await this.#serialPort.read(timeout);
     } catch (e) {
-      throw new TestScriptError(e.message, "HardwareError");
+      throw new TestScriptError(e.message, "HardwareError", e);
     }
     const endTime = getCurrentTimeInMicroseconds();
     if (response === null) throw new TestScriptError(`"${cmd}" timed out after ${timeout}ms`, "TimeoutError");

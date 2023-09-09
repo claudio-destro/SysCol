@@ -26,7 +26,7 @@ export const parseSerialPortOpenOptions = (cfg: string): SerialPortOpenOptions =
       baudRate: +baudRate,
       dataBits: +dataBits as SerialPortDataBits,
       parity: SHORTCUT_TO_PARITY[parity as SerialPortParityShort<SerialPortParity>] ?? (parity as SerialPortParity),
-      stopBit: +stopBits as SerialPortStopBits,
+      stopBits: +stopBits as SerialPortStopBits,
     };
   }
   throw new TestScriptError(`Unrecognized serial configuration ${JSON.stringify(cfg)}`, "SyntaxError");

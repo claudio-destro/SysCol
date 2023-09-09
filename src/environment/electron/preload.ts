@@ -25,7 +25,7 @@ const REGISTERED_EVENTS: RegisteredEventMap = {
 const SYS_COL_API: SysColApi = {
   executeScript: (): void => ipcRenderer.send("executeScript"),
   registerEventListener<E extends IpcRendererEvent>(event: E, callback: IpcRendererEventListenerMap[E]): void {
-    const ipcListener = (_event: Electron.IpcRendererEvent, ...args: Parameters<IpcRendererEventListenerMap[E]>) => callback.call(null, ...args);
+    const ipcListener = (_event: Electron.IpcRendererEvent, ...args: Parameters<IpcRendererEventListenerMap[E]>) => callback.call(null, ...args); // NOSONAR
     REGISTERED_EVENTS[event].push({callback, ipcListener});
     ipcRenderer.on(event, ipcListener);
   },

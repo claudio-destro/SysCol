@@ -12,5 +12,5 @@ declare global {
   }
 
   // eslint-disable-next-line no-var
-  var SysCol: SysColApi;
+  var SysCol: SysColApi; // NOSONAR
 }
