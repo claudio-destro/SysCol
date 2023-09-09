@@ -5,8 +5,8 @@
   "description": "SysCol Desktop",
   "main": ".webpack/main",
   "scripts": {
-    "start": "npm start-electron",
-    "make": "npm make-electron",
+    "start": "npm run start-electron",
+    "make": "npm run make-electron",
     "start-electron": "electron-forge start",
     "make-electron": "electron-forge make",
     "start-tauri": "tauri dev",
