@@ -75,7 +75,10 @@ A response has the same format of the command, except
 
 A macro starts with a `@`.
 
-- `@open COM BAUD_RATE-START_BITS-PARITY-STOP_BITS` - open the given COM port
-- `@timeout MILLISECONDS` - set the execution timeout in milliseconds
-- `@wait MILLISECONDS` - stop execution for the given milliseconds
-- `@close` - close the COM port
+- `@close_log_file` - close the log file
+- `@close_serial_port` - close the COM port
+- `@open_log_file FILENAME FORMAT` - write a log file in the given format (`full` or `tests-only`) 
+- `@open_serial_port COM BAUD_RATE-START_BITS-PARITY-STOP_BITS` - open the given COM port
+- `@run_script SCRIPT_FILE` - run sub script (serial port can be reused)
+- `@timeout TIME` - set the execution timeout of subsequent commands
+- `@wait TIME` - stop execution for the given amount of time
