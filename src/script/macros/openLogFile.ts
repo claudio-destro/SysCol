@@ -49,7 +49,7 @@ export const openLogFile = async (parentScript: TestScript, logFile: string, for
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       error: (error: any) => {
-        writer.write(`${prefix("error")} ${error} at line ${parentScript.lineNumber}\r\n`);
+        writer.write(`${prefix("error")} ${error}\r\n`);
       },
       start: noop,
       stop: noop,

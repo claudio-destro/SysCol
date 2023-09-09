@@ -65,6 +65,10 @@ export class TestScriptImpl implements TestScript {
     return this.#executeScript().catch(err => {
       this.#emit("error", err);
       throw err;
+    }).finally(() => this.#logFile?.close())
+      .finally( () => {
+      this.#logFile = null;
+      this.#currentLine = 0;
     });
   }
 
@@ -98,10 +102,7 @@ export class TestScriptImpl implements TestScript {
     } finally {
       this.#emit("stop");
       await this.#serialPort?.close();
-      await this.#logFile?.close();
       this.#serialPort = null;
-      this.#logFile = null;
-      this.#currentLine = 0;
     }
   }
 

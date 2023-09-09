@@ -19,4 +19,8 @@ export class TestScriptError {
       lineNumber: script.lineNumber,
     });
   }
+
+  toString(): string {
+    return `${this.name}: ${this.message}\n${this.stack.map(({fileName, lineNumber}) => `\tat ${fileName}:${lineNumber}`).join("\n")}`;
+  }
 }
