@@ -4,7 +4,7 @@ import {TextFileWriter} from "../../environment/TextFileWriter";
 import {TestScriptError} from "../TestScriptError";
 import {TestScriptListenerMap} from "../TestScriptEvents";
 import {LogOutputType} from "../LogOutputType";
-import {parseTestResponse} from "../../protocols/syscol/parseCommandResponse";
+import {CommandProtocol} from "../CommandProtocol";
 
 const FILE_NAME_PLACEHOLDERS: Record<string, () => string> = {
   now: (): string => new Date().toISOString().replace(/[-:]|\.\d+/g, ""),
@@ -24,18 +24,24 @@ const noop = () => {
 
 const EOL = "\r\n";
 
-const mapTestToLabel = (response: string): string => parseTestResponse(response).label;
-
-export const openLogFile = async (parentScript: TestScript, logFile: string, format: LogOutputType, env: Environment): Promise<TextFileWriter> => {
+export const openLogFile = async (
+  parentScript: TestScript,
+  logFile: string,
+  format: LogOutputType,
+  environment: Environment,
+  protocol: CommandProtocol,
+): Promise<TextFileWriter> => {
   let writer: TextFileWriter;
   try {
-    logFile = await env.resolvePath(parentScript.filePath, logFile);
+    logFile = await environment.resolvePath(parentScript.filePath, logFile);
     logFile = mungFileName(logFile);
-    console.log(`Open log file ${logFile}`);
-    writer = await env.createTextFileWriter(logFile);
+    console.log(`Open log file ${JSON.stringify(logFile)} - ${JSON.stringify(format)}`);
+    writer = await environment.createTextFileWriter(logFile);
   } catch (e) {
     throw new TestScriptError(e.message, "FileError", e);
   }
+
+  const mapTestToLabel = (response: string): string => protocol.parseTestResponse(response).label;
 
   const writeln = (str: string): void => {
     writer.write(`${str}${EOL}`).catch(console.error);

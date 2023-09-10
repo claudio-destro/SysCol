@@ -148,7 +148,7 @@ export class TestScriptImpl implements TestScript {
           case "open_log_file":
             this.#emit("message", "info", row);
             await this.#logFile?.close();
-            this.#logFile = await openLogFile(this, argv[0], argv[1] as LogOutputType, this.#environment);
+            this.#logFile = await openLogFile(this, argv[0], argv[1] as LogOutputType, this.#environment, this.#protocol);
             this.#emit("message", "info", this.#logFile.filePath);
             break;
           case "open_serial_port":
