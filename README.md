@@ -83,3 +83,19 @@ A macro starts with a `@`.
 - `@run_script SCRIPT_FILE` - run sub script (serial port can be reused)
 - `@timeout TIME` - set the execution timeout of subsequent commands
 - `@wait TIME` - stop execution for the given amount of time
+
+## GUI
+
+Windows:
+
+- `Control` + `N` - `File` > `New Window` - open a script in a new window
+- `Control` + `O` - `File` > `Open Script` - open a script in the current window
+- `Control` + `R` - `Script` > `Run` - (reload and) run the current script
+- `F8` - `Script` > `Interrupt` - interrupt current script execution
+
+macOS:
+
+- `Command` + `N` - `File` > `New Window` - open a script in a new window
+- `Command` + `O` - `File` > `Open Script` - open a script in the current window
+- `Command` + `R` - `Script` > `Run` - (reload and) run the current script
+- `Command` + `.` - `Script` > `Interrupt` - interrupt current script execution
