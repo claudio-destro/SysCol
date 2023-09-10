@@ -4,6 +4,7 @@ import {TestScriptEvent, TestScriptListenerMap} from "../../script/TestScriptEve
 import {TestScriptBuilder} from "../../TestScriptBuilder";
 import {TestScriptInterruptController} from "../../script/TestScriptInterruptController";
 import {ElectronEnvironment} from "./ElectronEnvironment";
+import {SysColCommandProtocol} from "../../protocols/SysColCommandProtocol";
 
 const SCRIPTS: Record<number, {file: string; script: TestScript; controller: TestScriptInterruptController}> = {};
 
@@ -16,7 +17,7 @@ const makeTestScriptEventListenerFactory = (script: TestScript, window: BrowserW
 
 export const loadScript = async (file: string, window: BrowserWindow) => {
   console.log(`Load script ${JSON.stringify(file)} into window "${window.id}"`);
-  const builder: TestScriptBuilder = new TestScriptBuilder(new ElectronEnvironment());
+  const builder: TestScriptBuilder = new TestScriptBuilder(new ElectronEnvironment(), new SysColCommandProtocol());
   const script: TestScript = await builder.loadTestScript(file);
   const controller: TestScriptInterruptController = await builder.attachInterruptController(script);
   window.webContents.send("setScriptFileName", file);

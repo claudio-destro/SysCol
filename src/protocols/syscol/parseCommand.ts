@@ -1,5 +1,5 @@
-import {Command} from "../Command";
-import {TestScriptError} from "../TestScriptError";
+import {Command} from "../../script/Command";
+import {TestScriptError} from "../../script/TestScriptError";
 
 const parseArguments = (args: string): Array<string> => {
   const values: Array<string> = [];

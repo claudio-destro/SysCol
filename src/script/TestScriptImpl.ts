@@ -1,10 +1,6 @@
 import EventEmitter from "eventemitter3";
 import {openSerialPort} from "./macros/openSerialPort";
-import {parseCommand} from "./protocol/parseCommand";
-import {parseCommandResponse} from "./protocol/parseCommandResponse";
 import {sleep} from "./macros/sleep";
-import {stringifyHardwareCommand} from "./protocol/stringifyHardwareCommand";
-import {getTestResult} from "./protocol/getTestResult";
 import {TestScript, TestScriptReadyState} from "./TestScript";
 import {TestScriptEvent, TestScriptListenerMap, TestScriptListeners} from "./TestScriptEvents";
 import {TestScriptInterruptSignal} from "./TestScriptInterruptController";
@@ -16,6 +12,7 @@ import {Environment} from "../environment/Environment";
 import {SerialPort} from "../environment/SerialPort";
 import {loadScript} from "./macros/loadScript";
 import {LogOutputType} from "./LogOutputType";
+import {CommandProtocol} from "./CommandProtocol";
 
 const getCurrentTimeInMicroseconds = () => (performance.now() * 1_000) | 0;
 
@@ -25,16 +22,18 @@ export class TestScriptImpl implements TestScript {
   readonly #filePath?: string | null;
   readonly #text: Array<string>;
   readonly #environment: Environment;
+  readonly #protocol: CommandProtocol;
   #readyState: TestScriptReadyState = "new";
   #currentLine = 0;
   #commandTimeout = 5000;
   #serialPort?: SerialPort | null;
   #logFile?: TextFileWriter | null;
 
-  constructor(path: string, text: string, env: Environment) {
+  constructor(path: string, text: string, environment: Environment, protocol: CommandProtocol) {
     this.#filePath = path;
     this.#text = text.split(/\r\n|\r|\n/gm);
-    this.#environment = env;
+    this.#environment = environment;
+    this.#protocol = protocol;
   }
 
   get filePath(): string | null {
@@ -81,12 +80,12 @@ export class TestScriptImpl implements TestScript {
     this.#emit("start");
     try {
       for await (const {response, elapsed} of this.#executeSingleCommand()) {
-        const {argv, error} = parseCommandResponse(response);
+        const {argv, error} = this.#protocol.parseCommandResponse(response);
         if (error) {
           this.#emit("message", "error", response);
           continue;
         }
-        const {result} = getTestResult(argv);
+        const {result} = this.#protocol.getTestResult(argv);
         switch (result) {
           case "FAIL":
           case "PASS":
@@ -130,7 +129,7 @@ export class TestScriptImpl implements TestScript {
       this.signal?.throwIfInterrupted();
       const row = this.#nextLine();
       if (row === null) return;
-      const {command, commandLine, argv, macro} = parseCommand(row);
+      const {command, commandLine, argv, macro} = this.#protocol.parseCommand(row);
       if (macro) {
         switch (command) {
           case "echo":
@@ -175,7 +174,7 @@ export class TestScriptImpl implements TestScript {
             throw new TestScriptError(`Unrecognized command ${JSON.stringify(command)}`, "SyntaxError");
         }
       } else {
-        yield this.#sendCommandAndWaitResponse(stringifyHardwareCommand(command, ...argv));
+        yield this.#sendCommandAndWaitResponse(this.#protocol.stringifyHardwareCommand(command, ...argv));
       }
     }
   }

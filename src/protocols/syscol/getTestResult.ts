@@ -1,7 +1,5 @@
-import {CommandResponseArgument} from "../CommandResponse";
-
-type TestOutCome = "FAIL" | "PASS";
-export type TestResult = {test?: string; result?: TestOutCome};
+import {CommandResponseArgument} from "../../script/CommandResponse";
+import {TestOutCome, TestResult} from "../../script/CommandProtocol";
 
 export const getTestResult = (argv: Array<CommandResponseArgument>): TestResult => {
   const outcome = argv.filter(status => /FAIL|PASS/.test(status.value));

@@ -1,5 +1,5 @@
-import {parseCommandResponse} from "../../script/protocol/parseCommandResponse";
-import {CommandResponse} from "../../script/CommandResponse";
+import {parseCommandResponse} from "../../../protocols/syscol/parseCommandResponse";
+import {CommandResponse} from "../../../script/CommandResponse";
 
 describe("VER response parsing", () => {
   test("should parse response", () => {

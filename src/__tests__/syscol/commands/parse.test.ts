@@ -1,4 +1,4 @@
-import {parseCommand} from "../../script/protocol/parseCommand";
+import {parseCommand} from "../../../protocols/syscol/parseCommand";
 
 describe("parseCommand", () => {
   test('should parse "ver"', () => expect(parseCommand(" ver ?")).toMatchObject({command: "ver", argv: ["?"]}));

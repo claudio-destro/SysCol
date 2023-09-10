@@ -4,7 +4,7 @@ import {TextFileWriter} from "../../environment/TextFileWriter";
 import {TestScriptError} from "../TestScriptError";
 import {TestScriptListenerMap} from "../TestScriptEvents";
 import {LogOutputType} from "../LogOutputType";
-import {parseTestResponse} from "../protocol/parseCommandResponse";
+import {parseTestResponse} from "../../protocols/syscol/parseCommandResponse";
 
 const FILE_NAME_PLACEHOLDERS: Record<string, () => string> = {
   now: (): string => new Date().toISOString().replace(/[-:]|\.\d+/g, ""),

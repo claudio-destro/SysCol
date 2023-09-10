@@ -1,4 +1,4 @@
-import {parseCommand} from "../../script/protocol/parseCommand";
+import {parseCommand} from "../../protocols/syscol/parseCommand";
 
 describe("parse macros", () => {
   test('should parse double quoted " arguments', () =>

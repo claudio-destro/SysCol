@@ -1,4 +1,4 @@
-import {parseCommandResponse} from "../../script/protocol/parseCommandResponse";
+import {parseCommandResponse} from "../../../protocols/syscol/parseCommandResponse";
 
 describe("DDI response parsing", () => {
   test("should parse response", () =>

@@ -1,5 +1,5 @@
-import {CommandResponse, CommandResponseArgument, TestResponse} from "../CommandResponse";
-import {TestScriptError} from "../TestScriptError";
+import {CommandResponse, CommandResponseArgument, TestResponse} from "../../script/CommandResponse";
+import {TestScriptError} from "../../script/TestScriptError";
 import {makeTestResponse} from "./makeTestResponse";
 
 const parseArgument = (arg: string): CommandResponseArgument => {

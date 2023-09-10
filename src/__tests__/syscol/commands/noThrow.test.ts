@@ -1,4 +1,4 @@
-import {parseCommand} from "../../script/protocol/parseCommand";
+import {parseCommand} from "../../../protocols/syscol/parseCommand";
 
 describe("parseCommand", () => {
   test('"ver" should not throw', () => expect(() => parseCommand(" ver")).not.toThrow());

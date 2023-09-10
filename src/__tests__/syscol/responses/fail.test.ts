@@ -1,5 +1,5 @@
-import {parseCommandResponse} from "../../script/protocol/parseCommandResponse";
-import {isTestFailed} from "../../script/protocol/getTestResult";
+import {parseCommandResponse} from "../../../protocols/syscol/parseCommandResponse";
+import {isTestFailed} from "../../../protocols/syscol/getTestResult";
 
 describe("Tests failed", () => {
   test('"TST" should fail', () => expect(isTestFailed(parseCommandResponse("{SC,TST,7.1.13:FAIL}\n").argv)).toBeTruthy());

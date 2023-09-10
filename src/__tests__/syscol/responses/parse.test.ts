@@ -1,4 +1,4 @@
-import {parseCommandResponse} from "../../script/protocol/parseCommandResponse";
+import {parseCommandResponse} from "../../../protocols/syscol/parseCommandResponse";
 
 describe("parseCommandResponse", () => {
   test("should parse response", () => expect(parseCommandResponse("{SC,CAR,0FH}")).toMatchObject({command: "car", argv: [{key: "0FH"}]}));

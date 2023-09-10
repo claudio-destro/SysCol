@@ -1,4 +1,4 @@
-import {parseCommandResponse} from "../../script/protocol/parseCommandResponse";
+import {parseCommandResponse} from "../../../protocols/syscol/parseCommandResponse";
 
 describe("parseCommandResponse", () => {
   test('"VER" should not throw', () => expect(() => parseCommandResponse("{SC,VER,FWSC:1.4 HWSC:1.2 HWRM:1.3}")).not.toThrow());

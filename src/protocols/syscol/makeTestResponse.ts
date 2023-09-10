@@ -1,4 +1,4 @@
-import {CommandResponse, TestResponse} from "../CommandResponse";
+import {CommandResponse, TestResponse} from "../../script/CommandResponse";
 
 const TEST_TO_LABEL: Record<string, string> = {
   "7.0.0": "POWER OFF",

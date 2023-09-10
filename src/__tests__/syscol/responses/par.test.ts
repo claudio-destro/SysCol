@@ -1,7 +1,7 @@
-import {parseCommand} from "../../script/protocol/parseCommand";
-import {stringifyHardwareCommand} from "../../script/protocol/stringifyHardwareCommand";
-import {parseCommandResponse} from "../../script/protocol/parseCommandResponse";
-import {CommandResponse} from "../../script/CommandResponse";
+import {parseCommand} from "../../../protocols/syscol/parseCommand";
+import {stringifyHardwareCommand} from "../../../protocols/syscol/stringifyHardwareCommand";
+import {parseCommandResponse} from "../../../protocols/syscol/parseCommandResponse";
+import {CommandResponse} from "../../../script/CommandResponse";
 import ProvidesCallback = jest.ProvidesCallback;
 
 // prettier-ignore
