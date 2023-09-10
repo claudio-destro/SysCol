@@ -180,7 +180,7 @@ export class TestScriptImpl implements TestScript {
   }
 
   async #runScript(scriptFile: string): Promise<void> {
-    const script: TestScript = await loadScript(this, scriptFile, this.#environment);
+    const script: TestScript = await loadScript(this, scriptFile, this.#environment, this.#protocol);
     this.#emit("message", "info", script.filePath.toString());
     this.#listeners("message").forEach(listener => script.on("message", listener));
     this.#listeners("command").forEach(listener => script.on("command", listener));
