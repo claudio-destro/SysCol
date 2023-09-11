@@ -148,13 +148,25 @@ export class TestScriptImpl implements TestScript {
           case "open_log_file":
             this.#emit("message", "info", row);
             await this.#logFile?.close();
-            this.#logFile = await openLogFile(this, argv[0], argv[1] as LogOutputType, this.#environment, this.#protocol);
+            this.#logFile = await openLogFile({
+              logFile: argv[0],
+              format: argv[1] as LogOutputType,
+              environment: this.#environment,
+              protocol: this.#protocol,
+              parentScript: this,
+            });
             this.#emit("message", "info", this.#logFile.filePath);
             break;
           case "open_serial_port":
             this.#emit("message", "info", row);
             await this.#serialPort?.close();
-            this.#serialPort = await openSerialPort(argv[0], argv[1], this.#environment);
+            this.#serialPort = await openSerialPort({
+              path: argv[0],
+              args: argv[1],
+              environment: this.#environment,
+              protocol: this.#protocol,
+              parentScript: this,
+            });
             break;
           case "run_script":
             this.#emit("message", "info", row);
@@ -180,7 +192,12 @@ export class TestScriptImpl implements TestScript {
   }
 
   async #runScript(scriptFile: string): Promise<void> {
-    const script: TestScript = await loadScript(this, scriptFile, this.#environment, this.#protocol);
+    const script: TestScript = await loadScript({
+      scriptFile,
+      environment: this.#environment,
+      protocol: this.#protocol,
+      parentScript: this,
+    });
     this.#emit("message", "info", script.filePath.toString());
     this.#listeners("message").forEach(listener => script.on("message", listener));
     this.#listeners("command").forEach(listener => script.on("command", listener));

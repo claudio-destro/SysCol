@@ -1,10 +1,8 @@
-import {TestScript} from "../TestScript";
-import {Environment} from "../../environment/Environment";
 import {TextFileWriter} from "../../environment/TextFileWriter";
 import {TestScriptError} from "../TestScriptError";
 import {TestScriptListenerMap} from "../TestScriptEvents";
 import {LogOutputType} from "../LogOutputType";
-import {CommandProtocol} from "../CommandProtocol";
+import {MacroArguments} from "../MacroArguments";
 
 const FILE_NAME_PLACEHOLDERS: Record<string, () => string> = {
   now: (): string => new Date().toISOString().replace(/[-:]|\.\d+/g, ""),
@@ -24,13 +22,9 @@ const noop = () => {
 
 const EOL = "\r\n";
 
-export const openLogFile = async (
-  parentScript: TestScript,
-  logFile: string,
-  format: LogOutputType,
-  environment: Environment,
-  protocol: CommandProtocol,
-): Promise<TextFileWriter> => {
+export type OpenLogFileArgument = MacroArguments & {logFile: string; format: LogOutputType};
+
+export const openLogFile = async ({parentScript, logFile, format, environment, protocol}: OpenLogFileArgument): Promise<TextFileWriter> => {
   let writer: TextFileWriter;
   try {
     logFile = await environment.resolvePath(parentScript.filePath, logFile);

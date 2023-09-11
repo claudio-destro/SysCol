@@ -1,10 +1,11 @@
 import {TestScript} from "../TestScript";
 import {TestScriptError} from "../TestScriptError";
-import {Environment} from "../../environment/Environment";
 import {TestScriptImpl} from "../TestScriptImpl";
-import {CommandProtocol} from "../CommandProtocol";
+import {MacroArguments} from "../MacroArguments";
 
-export const loadScript = async (parentScript: TestScript, scriptFile: string, environment: Environment, protocol: CommandProtocol): Promise<TestScript> => {
+export type LoadScriptArguments = MacroArguments & {scriptFile: string};
+
+export const loadScript = async ({parentScript, scriptFile, environment, protocol}: LoadScriptArguments): Promise<TestScript> => {
   let text: string;
   try {
     scriptFile = await environment.resolvePath(parentScript.filePath, scriptFile);
