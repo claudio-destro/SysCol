@@ -39,7 +39,7 @@ export const openLogFile = async ({parentScript, logFile, format, environment, p
     writer.write(str + eol).catch(console.error);
   };
 
-  const writeLog = (prefix: string, str: string): void => writeln(pad(prefix) + str);
+  const writeLog = (prefix: string, str: string): void => writeln(`${pad(prefix)} ${str}`);
 
   const formats: Record<LogOutputType, TestScriptListenerMap> = {
     full: {
