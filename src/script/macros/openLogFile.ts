@@ -12,7 +12,7 @@ const mungFileName = (name: string): string => {
   return name.replace(/\{\{([^}]+)}}/g, ($0, $1): string => FILE_NAME_PLACEHOLDERS[$1]?.() ?? $0);
 };
 
-const prefix = (prefix: string, maxLength = 5, fillString = " "): string => prefix.padStart(maxLength, fillString);
+const pad = (prefix: string, maxLength = 5, fillString = " "): string => prefix.padStart(maxLength, fillString);
 
 const instant = (microseconds: number): string => `[${(microseconds / 1000).toFixed(1)}ms]`;
 
@@ -20,11 +20,9 @@ const noop = () => {
   /* EMPTY */
 };
 
-const EOL = "\r\n";
+export type OpenLogFileArgument = MacroArguments & {logFile: string; format: LogOutputType; eol?: string};
 
-export type OpenLogFileArgument = MacroArguments & {logFile: string; format: LogOutputType};
-
-export const openLogFile = async ({parentScript, logFile, format, environment, protocol}: OpenLogFileArgument): Promise<TextFileWriter> => {
+export const openLogFile = async ({parentScript, logFile, format, environment, protocol, eol = "\r\n"}: OpenLogFileArgument): Promise<TextFileWriter> => {
   let writer: TextFileWriter;
   try {
     logFile = await environment.resolvePath(parentScript.filePath, logFile);
@@ -38,24 +36,29 @@ export const openLogFile = async ({parentScript, logFile, format, environment, p
   const mapTestToLabel = (response: string): string => protocol.parseTestResponse(response).label;
 
   const writeln = (str: string): void => {
-    writer.write(`${str}${EOL}`).catch(console.error);
+    writer.write(str + eol).catch(console.error);
   };
+
+  const writeLog = (prefix: string, str: string): void => writeln(pad(prefix) + str);
 
   const formats: Record<LogOutputType, TestScriptListenerMap> = {
     full: {
-      command: (command: string) => writeln(`${prefix("<<")} ${command}`),
-      response: (response: string, elapsed: number) => writeln(`${prefix(">>")} ${response} ${instant(elapsed)}`),
-      test: (response: string, passed: boolean, elapsed: number) => writeln(`${prefix(passed ? "PASS" : "FAIL")} ${response} ${instant(elapsed)}`),
-      message: (type: "error" | "info" | "log", message: string) => writeln(`${prefix(type.toUpperCase())} ${(message ?? "").trim()}`),
+      command: (command: string) => writeLog("<<", command),
+      response: (response: string, elapsed: number) => writeLog(">>", `${response} ${instant(elapsed)}`),
+      test: (response: string, passed: boolean, elapsed: number) => writeLog(passed ? "PASS" : "FAIL", `${response} ${instant(elapsed)}`),
+      message: (type: "error" | "info" | "log", message: string) => writeLog(type.toUpperCase(), `${(message ?? "").trim()}`),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      error: (error: any) => writeln(`${prefix("error")} ${error}`),
+      error: (error: any) => writeLog("error", error?.toString() ?? "?"),
       start: noop,
       stop: noop,
     },
     "tests-only": {
       command: noop,
       response: noop,
-      test: (response: string, passed: boolean): void => writeln(`# ${mapTestToLabel(response)} ${passed ? "PASS" : "FAIL"}${EOL}${response}`),
+      test: (response: string, passed: boolean): void => {
+        writeln(`# ${mapTestToLabel(response)} ${passed ? "PASS" : "FAIL"}`);
+        writeln(response);
+      },
       message: noop,
       error: noop,
       start: noop,
