@@ -54,8 +54,15 @@ export const logMessage = (_lineno: number, type: "log" | "info" | "error" | "st
   appendRow(row);
 };
 
-export const logStatus = (status: string): void => {
-  document.querySelectorAll("#sys_col_bar .sys_col_status").forEach((e: HTMLElement) => (e.innerText = status));
+export const logStatus = (status: string, clazz?: string[]): void => {
+  document.querySelectorAll("#sys_col_bar .sys_col_status").forEach((e: HTMLElement) => (e.innerHTML = status));
+  if (clazz?.length) {
+    document.querySelectorAll("#sys_col_bar").forEach(e => {
+      const [unset, set] = clazz;
+      if (unset) e.classList.remove(unset);
+      if (set) e.classList.add(set);
+    });
+  }
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

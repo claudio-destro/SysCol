@@ -39,7 +39,13 @@ const logStarted = () => logStatus("Running...");
 
 const logStopped = (): void => {
   const tests = getTestResults();
-  logStatus(`Tests: ${tests.pass} passed, ${tests.pass + tests.fail} total`);
+  if (tests.fail) {
+    logStatus(`Tests: ${tests.fail} failed, ${tests.pass + tests.fail} total`, ["tests-passed", "tests-failed"]);
+  } else if (tests.pass) {
+    logStatus(`Tests: ${tests.pass} passed`, ["tests-failed", "tests-passed"]);
+  } else {
+    logStatus("No tests");
+  }
 };
 
 const logInterrupt = () => logStatus("Interrupt...");

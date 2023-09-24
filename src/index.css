@@ -139,6 +139,10 @@ html, body {
   margin-left: 1em;
 }
 
+.sys_col_status .test-count {
+  font-weight: bold;
+}
+
 /*
  * COLOR SCHEMES
  */
@@ -172,14 +176,23 @@ html, body {
     color: #000000;
   }
 
-  .sys_col_response.test_pass {
-    color: #008000;
-  }
-
   .sys_col_response.test_fail,
   .sys_col_message.error,
   .sys_col_message.stack {
-    color: #800000;
+    color: #CC0000;
+  }
+
+  #sys_col_bar.tests-passed {
+    background: #00CC00;
+  }
+
+  #sys_col_bar.tests-failed {
+    background: #CC0000;
+  }
+
+  #sys_col_bar.tests-passed .sys_col_status,
+  #sys_col_bar.tests-failed .sys_col_status {
+    color: #FFFFFF;
   }
 
   .sys_col_message.info:before {
@@ -220,14 +233,23 @@ html, body {
     color: #CCCCCC;
   }
 
-  .sys_col_response.test_pass {
-    color: #00CC00;
-  }
-
   .sys_col_response.test_fail,
   .sys_col_message.error,
   .sys_col_message.stack {
     color: #CC0000;
+  }
+
+  #sys_col_bar.tests-passed {
+    background: #008000;
+  }
+
+  #sys_col_bar.tests-failed {
+    background: #800000;
+  }
+
+  #sys_col_bar.tests-passed .sys_col_status,
+  #sys_col_bar.tests-failed .sys_col_status {
+    color: #80CCCC;
   }
 
   .sys_col_message.info:before {
