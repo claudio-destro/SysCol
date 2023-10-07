@@ -21,7 +21,7 @@ export type IpcMainEventListenerMap = {
 
 export type IpcRendererEventListeners = {
   clearLogs(): Promise<void>;
-  confirm(timeout: number, prompt: string, ...options: TestConfirmOption[]): Promise<string>;
+  confirm(lineno: number, timeout: number, prompt: string, ...options: TestConfirmOption[]): Promise<string>;
   interrupt(): Promise<void>;
   setScriptFileName(fileName: string): Promise<void>;
 } & {

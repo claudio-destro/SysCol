@@ -56,11 +56,6 @@ html, body {
   cursor: text;
 }
 
-button:disabled {
-  cursor: pointer;
-  color: #AAAAAA;
-}
-
 .sys_col_row:hover {
   /* EMPTY */
 }

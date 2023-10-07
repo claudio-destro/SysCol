@@ -8,7 +8,7 @@ export type TestConfirmOption = {
   value: string;
 };
 
-export type TestConfirmFunction = (prompt: string, option: TestConfirmOption, ...options: TestConfirmOption[]) => Promise<string>;
+export type TestConfirmFunction = (timeout: number, prompt: string, option: TestConfirmOption, ...options: TestConfirmOption[]) => Promise<string>;
 
 export interface TestScript {
   readonly filePath: string | null;

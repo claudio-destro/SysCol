@@ -4,7 +4,8 @@ import {clearLogs, confirm, getTestResults, logCommand, logCommandResponse, logE
 
 export const setScriptFileName = async (file: string): Promise<void> => {
   document.title = file;
-  return logStatus(file);
+  await clearLogs();
+  return logStatus(file, ["tests-failed tests-passed"]);
 };
 
 const logStarted = async (): Promise<void> => logStatus("Running...");

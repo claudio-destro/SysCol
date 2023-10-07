@@ -27,6 +27,7 @@ const SYS_COL_API: SysColApi = {
   executeScript: (): void => ipcRenderer.send("executeScript"),
   registerEventListener<E extends IpcRendererEvent>(event: E, callback: IpcRendererEventListenerMap[E]): void {
     const ipcListener = async (event: Electron.IpcRendererEvent, responseChannel: string, errorChannel: string, ...parameters: Parameters<IpcRendererEventListenerMap[E]>) => {
+      console.log(...parameters);
       try {
         const ret = await callback.call(null, ...parameters);
         event.sender.send(responseChannel, ret);

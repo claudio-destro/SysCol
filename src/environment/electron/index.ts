@@ -60,8 +60,8 @@ export const logStatus = async (status: string, clazz?: string[]): Promise<void>
   if (clazz?.length) {
     document.querySelectorAll("#sys_col_bar").forEach(e => {
       const [unset, set] = clazz;
-      if (unset) e.classList.remove(unset);
-      if (set) e.classList.add(set);
+      if (unset) unset.split(/\s+/).forEach(clazz => e.classList.remove(clazz));
+      if (set) set.split(/\s+/).forEach(clazz => e.classList.add(clazz));
     });
   }
 };
@@ -82,8 +82,8 @@ export const clearLogs = async (): Promise<void> => {
 
 export const getTestResults = () => ({...tests});
 
-export const confirm = async (timeout: number, prompt: string, ...options: TestConfirmOption[]): Promise<string> => {
-  await logMessage(-1, "question", prompt);
+export const confirm = async (lineno: number, timeout: number, prompt: string, ...options: TestConfirmOption[]): Promise<string> => {
+  await logMessage(lineno, "question", prompt);
   const row = document.createElement("p");
   row.className = `sys_col_message sys_col_row`;
   return new Promise((resolve, reject) => {
@@ -92,21 +92,21 @@ export const confirm = async (timeout: number, prompt: string, ...options: TestC
         row.parentNode?.removeChild(row);
         reject(new Error("Timeout"));
       },
-      Math.max(timeout, 10_000),
+      Math.max(timeout, 30_000),
     );
 
     const clearButtons = () => {
       clearTimeout(timeoutId);
-      row.querySelectorAll("button").forEach(btn => {
+      row.querySelectorAll('input[type="button"]').forEach((btn: HTMLInputElement) => {
         btn.disabled = true;
         btn.onclick = null;
       });
     };
 
     for (const option of options) {
-      const btn = document.createElement("button");
+      const btn = document.createElement("input");
       btn.type = "button";
-      btn.innerText = option.label;
+      btn.value = option.label;
       btn.onclick = () => {
         clearButtons();
         resolve(option.value);

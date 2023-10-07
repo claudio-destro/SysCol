@@ -18,6 +18,7 @@ const getCurrentTimeInMicroseconds = () => (performance.now() * 1_000) | 0;
 
 export class TestScriptImpl implements TestScript {
   signal?: TestScriptInterruptSignal | null;
+  confirm: TestConfirmFunction = null;
   readonly #events = new EventEmitter<string>();
   readonly #filePath?: string | null;
   readonly #text: Array<string>;
@@ -47,8 +48,6 @@ export class TestScriptImpl implements TestScript {
   get readyState(): TestScriptReadyState {
     return this.#readyState;
   }
-
-  confirm: TestConfirmFunction = null;
 
   on<T extends TestScriptEvent>(event: T, listener: TestScriptListenerMap[T]): void {
     this.#events.on(event, listener);
@@ -148,11 +147,13 @@ export class TestScriptImpl implements TestScript {
             this.#serialPort = null;
             break;
           case "confirm":
+            if (argv.length !== 7) throw new TestScriptError("Bad parameters", "SyntaxError");
             try {
-              const ret = await this.confirm?.(argv[0], {label: "Passed", value: "PASS"}, {label: "Failed", value: "FAIL"});
+              const [prompt, testId, , , , , passValue] = argv;
+              const ret = await this.confirm?.(this.#commandTimeout, prompt, {label: argv[2], value: argv[3]}, {label: argv[4], value: argv[5]});
               yield {
                 elapsed: 0,
-                response: `{SC,TST,0.0.0:${ret}}`
+                response: this.#protocol.stringifyTestCommandResponse(testId, ret === passValue),
               };
             } catch (e) {
               throw new TestScriptError(e.message, "InvocationError", e);
