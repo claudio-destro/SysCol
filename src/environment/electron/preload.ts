@@ -5,13 +5,14 @@ import {SysColApi} from "./SysColApi";
 type RegisteredEventMap = {
   [event in IpcRendererEvent]: Array<{
     callback: IpcRendererEventListenerMap[event];
-    ipcListener: (_event: Electron.IpcRendererEvent, ...args: Parameters<IpcRendererEventListenerMap[event]>) => void;
+    ipcListener: (event: Electron.IpcRendererEvent, responseChannel: string, errorChannel: string, ...parameters: Parameters<IpcRendererEventListenerMap[event]>) => void;
   }>;
 };
 
 const REGISTERED_EVENTS: RegisteredEventMap = {
   setScriptFileName: [], // unused
   clearLogs: [], // unused
+  confirm: [],
   interrupt: [],
   error: [],
   message: [],
@@ -25,7 +26,16 @@ const REGISTERED_EVENTS: RegisteredEventMap = {
 const SYS_COL_API: SysColApi = {
   executeScript: (): void => ipcRenderer.send("executeScript"),
   registerEventListener<E extends IpcRendererEvent>(event: E, callback: IpcRendererEventListenerMap[E]): void {
-    const ipcListener = (_event: Electron.IpcRendererEvent, ...args: Parameters<IpcRendererEventListenerMap[E]>) => callback.call(null, ...args); // NOSONAR
+    const ipcListener = async (event: Electron.IpcRendererEvent, responseChannel: string, errorChannel: string, ...parameters: Parameters<IpcRendererEventListenerMap[E]>) => {
+      console.log(...parameters);
+      try {
+        const ret = await callback.call(null, ...parameters);
+        event.sender.send(responseChannel, ret);
+      } catch (e) {
+        console.error(e);
+        event.sender.send(errorChannel, e);
+      }
+    };
     REGISTERED_EVENTS[event].push({callback, ipcListener});
     ipcRenderer.on(event, ipcListener);
   },

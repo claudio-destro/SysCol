@@ -1,4 +1,5 @@
 import {TestScriptEvent, TestScriptListeners} from "../../script/TestScriptEvents";
+import {TestConfirmOption} from "../../script/TestScript";
 
 /*
  * Events from renderer to main
@@ -19,11 +20,12 @@ export type IpcMainEventListenerMap = {
  */
 
 export type IpcRendererEventListeners = {
-  clearLogs(): void;
-  interrupt(): void;
-  setScriptFileName(fileName: string): void;
+  clearLogs(): Promise<void>;
+  confirm(lineno: number, timeout: number, prompt: string, ...options: TestConfirmOption[]): Promise<string>;
+  interrupt(): Promise<void>;
+  setScriptFileName(fileName: string): Promise<void>;
 } & {
-  [event in TestScriptEvent]: (lineno: number, ...arg: Parameters<TestScriptListeners[event]>) => void;
+  [event in TestScriptEvent]: (lineno: number, ...arg: Parameters<TestScriptListeners[event]>) => Promise<ReturnType<TestScriptListeners[event]>>;
 };
 
 export type IpcRendererEvent = keyof IpcRendererEventListeners;

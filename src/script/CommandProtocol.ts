@@ -13,4 +13,6 @@ export interface CommandProtocol {
   parseCommandResponse(str: string): CommandResponse;
   parseTestResponse(str: string): TestResponse;
   stringifyHardwareCommand(cmd: string, ...args: Array<string>): string;
+  stringifyHardwareCommandResponse(cmd: string, ...args: Array<string>): string;
+  stringifyTestCommandResponse(testId: string, pass: boolean): string;
 }

@@ -1,4 +1,5 @@
 import {TestScriptError} from "../../script/TestScriptError";
+import {TestConfirmOption} from "../../script/TestScript";
 
 const tests = {pass: 0, fail: 0};
 
@@ -17,20 +18,20 @@ const appendRow = (row: HTMLElement): void => {
   log.scrollTo({top: log.scrollHeight});
 };
 
-export const logCommand = (_lineno: number, command: string): void => {
+export const logCommand = async (_lineno: number, command: string): Promise<void> => {
   const row = document.createElement("p");
   row.className = "sys_col_command sys_col_row";
   row.innerText = command;
   appendRow(row);
 };
 
-export const logTest = (lineno: number, response: string, passed: boolean, elapsed: number): void => {
+export const logTest = async (lineno: number, response: string, passed: boolean, elapsed: number): Promise<void> => {
   const status = passed ? "pass" : "fail";
-  logCommandResponse(lineno, response, elapsed, status);
+  await logCommandResponse(lineno, response, elapsed, status);
   tests[status]++;
 };
 
-export const logCommandResponse = (_lineno: number, response: string, elapsed: number, status?: "pass" | "fail"): void => {
+export const logCommandResponse = async (_lineno: number, response: string, elapsed: number, status?: "pass" | "fail"): Promise<void> => {
   const row = document.createElement("p");
   row.className = "sys_col_response sys_col_row";
   row.classList.toggle("test_pass", status === "pass");
@@ -45,7 +46,7 @@ export const logCommandResponse = (_lineno: number, response: string, elapsed: n
   appendRow(row);
 };
 
-export const logMessage = (_lineno: number, type: "log" | "info" | "error" | "stack", message: string): void => {
+export const logMessage = async (_lineno: number, type: "log" | "info" | "error" | "question" | "stack", message: string): Promise<void> => {
   message = (message ?? "").trim();
   const row = document.createElement("p");
   row.className = `sys_col_message sys_col_row ${type}`;
@@ -54,29 +55,64 @@ export const logMessage = (_lineno: number, type: "log" | "info" | "error" | "st
   appendRow(row);
 };
 
-export const logStatus = (status: string, clazz?: string[]): void => {
+export const logStatus = async (status: string, clazz?: string[]): Promise<void> => {
   document.querySelectorAll("#sys_col_bar .sys_col_status").forEach((e: HTMLElement) => (e.innerHTML = status));
   if (clazz?.length) {
     document.querySelectorAll("#sys_col_bar").forEach(e => {
       const [unset, set] = clazz;
-      if (unset) e.classList.remove(unset);
-      if (set) e.classList.add(set);
+      if (unset) unset.split(/\s+/).forEach(clazz => e.classList.remove(clazz));
+      if (set) set.split(/\s+/).forEach(clazz => e.classList.add(clazz));
     });
   }
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const logError = (lineno: number, err: TestScriptError): void => {
+export const logError = async (lineno: number, err: TestScriptError): Promise<void> => {
   const {message, name, stack} = err;
-  logMessage(lineno, "error", `${name}: ${message}`);
+  await logMessage(lineno, "error", `${name}: ${message}`);
   for (const {fileName, lineNumber} of stack) {
-    logMessage(lineno, "stack", `at ${fileName}:${lineNumber}`);
+    await logMessage(lineno, "stack", `at ${fileName}:${lineNumber}`);
   }
 };
 
-export const clearLogs = (): void => {
+export const clearLogs = async (): Promise<void> => {
   const log = document.getElementById("sys_col_log");
   log.innerHTML = "";
 };
 
 export const getTestResults = () => ({...tests});
+
+export const confirm = async (lineno: number, timeout: number, prompt: string, ...options: TestConfirmOption[]): Promise<string> => {
+  await logMessage(lineno, "question", prompt);
+  const row = document.createElement("p");
+  row.className = `sys_col_message sys_col_row`;
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(
+      () => {
+        row.parentNode?.removeChild(row);
+        reject(new Error("Timeout"));
+      },
+      Math.max(timeout, 30_000),
+    );
+
+    const clearButtons = () => {
+      clearTimeout(timeoutId);
+      row.querySelectorAll('input[type="button"]').forEach((btn: HTMLInputElement) => {
+        btn.disabled = true;
+        btn.onclick = null;
+      });
+    };
+
+    for (const option of options) {
+      const btn = document.createElement("input");
+      btn.type = "button";
+      btn.value = option.label;
+      btn.onclick = () => {
+        clearButtons();
+        resolve(option.value);
+      };
+      row.append(btn);
+    }
+    appendRow(row);
+  });
+};

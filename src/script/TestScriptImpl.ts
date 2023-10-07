@@ -1,7 +1,7 @@
 import EventEmitter from "eventemitter3";
 import {openSerialPort} from "./macros/openSerialPort";
 import {sleep} from "./macros/sleep";
-import {TestScript, TestScriptReadyState} from "./TestScript";
+import {TestConfirmFunction, TestScript, TestScriptReadyState} from "./TestScript";
 import {TestScriptEvent, TestScriptListenerMap, TestScriptListeners} from "./TestScriptEvents";
 import {TestScriptInterruptSignal} from "./TestScriptInterruptController";
 import {parseInterval} from "./macros/parseInterval";
@@ -18,6 +18,7 @@ const getCurrentTimeInMicroseconds = () => (performance.now() * 1_000) | 0;
 
 export class TestScriptImpl implements TestScript {
   signal?: TestScriptInterruptSignal | null;
+  confirm: TestConfirmFunction = null;
   readonly #events = new EventEmitter<string>();
   readonly #filePath?: string | null;
   readonly #text: Array<string>;
@@ -144,6 +145,19 @@ export class TestScriptImpl implements TestScript {
             this.#emit("message", "info", row);
             await this.#serialPort?.close();
             this.#serialPort = null;
+            break;
+          case "confirm":
+            if (argv.length !== 7) throw new TestScriptError("Bad parameters", "SyntaxError");
+            try {
+              const [prompt, testId, , , , , passValue] = argv;
+              const ret = await this.confirm?.(this.#commandTimeout, prompt, {label: argv[2], value: argv[3]}, {label: argv[4], value: argv[5]});
+              yield {
+                elapsed: 0,
+                response: this.#protocol.stringifyTestCommandResponse(testId, ret === passValue),
+              };
+            } catch (e) {
+              throw new TestScriptError(e.message, "InvocationError", e);
+            }
             break;
           case "open_log_file":
             this.#emit("message", "info", row);
