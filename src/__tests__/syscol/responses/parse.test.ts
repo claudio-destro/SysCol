@@ -16,6 +16,7 @@ describe("parseCommandResponse", () => {
   test("should parse response", () => expect(parseCommandResponse("{SC,DAG,ALARM-GU2:0}")).toMatchObject({command: "dag", argv: [{key: "ALARM-GU2", value: "0"}]}));
   test("should parse response", () => expect(parseCommandResponse("{SC,DMG,1}")).toMatchObject({command: "dmg", argv: [{key: "1"}]}));
   test("should parse response", () => expect(parseCommandResponse("{SC,DMG,0}")).toMatchObject({command: "dmg", argv: [{key: "0"}]}));
+  test("should parse response", () => expect(parseCommandResponse("{SC,DMV,MVB-GUH:1}")).toMatchObject({command: "dmv", argv: [{key: "MVB-GUH", value: "1"}]}));
   test("should parse response", () => expect(parseCommandResponse("{SC,IGL,2000.0mA}")).toMatchObject({command: "igl", argv: [{key: "2000.0mA"}]}));
   test("should parse response", () => expect(parseCommandResponse("{SC,VGL,24.000v}")).toMatchObject({command: "vgl", argv: [{key: "24.000v"}]}));
   test("should parse response", () => expect(parseCommandResponse("{SC,VGL,2.000v}")).toMatchObject({command: "vgl", argv: [{key: "2.000v"}]}));

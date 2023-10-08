@@ -31,11 +31,16 @@ export const logTest = async (lineno: number, response: string, passed: boolean,
   tests[status]++;
 };
 
+const markPassed = <T extends HTMLElement>(row: T, status: string): T => {
+  row.classList.toggle("test_pass", status === "pass");
+  row.classList.toggle("test_fail", status === "fail");
+  return row;
+};
+
 export const logCommandResponse = async (_lineno: number, response: string, elapsed: number, status?: "pass" | "fail"): Promise<void> => {
   const row = document.createElement("p");
   row.className = "sys_col_response sys_col_row";
-  row.classList.toggle("test_pass", status === "pass");
-  row.classList.toggle("test_fail", status === "fail");
+  markPassed(row, status);
   const body = document.createElement("span");
   body.innerText = response.toString().trim();
   row.appendChild(body);
@@ -95,20 +100,22 @@ export const confirm = async (lineno: number, timeout: number, prompt: string, .
       Math.max(timeout, 30_000),
     );
 
-    const clearButtons = () => {
-      clearTimeout(timeoutId);
-      row.querySelectorAll('input[type="button"]').forEach((btn: HTMLInputElement) => {
-        btn.disabled = true;
-        btn.onclick = null;
-      });
-    };
+    // const clearButtons = () => {
+    //   clearTimeout(timeoutId);
+    //   row.querySelectorAll('input[type="button"]').forEach((btn: HTMLInputElement) => {
+    //     btn.disabled = true;
+    //     btn.onclick = null;
+    //   });
+    // };
 
     for (const option of options) {
       const btn = document.createElement("input");
       btn.type = "button";
       btn.value = option.label;
       btn.onclick = () => {
-        clearButtons();
+        row.parentNode?.removeChild(row);
+        logMessage(lineno, "question", `${option.label} - ${JSON.stringify(option.value)}`);
+        clearTimeout(timeoutId);
         resolve(option.value);
       };
       row.append(btn);

@@ -112,6 +112,7 @@ const COMMAND_RESPONSE: Record<string, string> = {
   "{sc,tst,a.0.12,c}": `{SC,TST,a.0.12:FAIL FRQ:000000Hz TON:0000.00us}`,
   "{sc,tst,a.0.13,c}": `{SC,TST,a.0.??,x,ERR}`,
   "{sc,tst,b.0.1,c}": `{SC,TST,b.0.1:PASS}`,
+  "{sc,dmv,1}": "{SC,DMV,MVB-GUH:1}"
 };
 
 class TestSerialPortMock extends SerialPortMock {
