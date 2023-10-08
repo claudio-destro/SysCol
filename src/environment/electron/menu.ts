@@ -5,6 +5,7 @@ import {createWindow} from "./createWindow";
 import MenuItemConstructorOptions = Electron.MenuItemConstructorOptions;
 
 const isMac = platform === "darwin";
+const isWin = platform === "win32";
 
 const loadScriptAndOpenWindowIfNecessary = async (window?: BrowserWindow | null): Promise<void> => {
   const result = await dialog.showOpenDialog(window, {
@@ -80,6 +81,8 @@ const template: Array<MenuItemConstructorOptions> = [
 ];
 
 if (isMac) template.unshift({role: "appMenu"});
+
+if (isWin) template.push({role: "help", submenu: [{role: "about"}]});
 
 const menu = Menu.buildFromTemplate(template);
 export const createMenu = (): void => Menu.setApplicationMenu(menu);
