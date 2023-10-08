@@ -12,9 +12,14 @@ import {Environment} from "../environment/Environment";
 import {SerialPort} from "../environment/SerialPort";
 import {loadScript} from "./macros/loadScript";
 import {LogOutputType} from "./LogOutputType";
-import {CommandProtocol} from "./CommandProtocol";
+import {CommandProtocol, TestOutCome} from "./CommandProtocol";
+import {TestScriptCounters} from "./TestScriptCounters";
 
 const getCurrentTimeInMicroseconds = () => (performance.now() * 1_000) | 0;
+
+type ExecutedCommandStats = {response: string; elapsed: number};
+
+const NULL_RESPONSE: ExecutedCommandStats = {response: null, elapsed: -1} as const;
 
 export class TestScriptImpl implements TestScript {
   signal?: TestScriptInterruptSignal | null;
@@ -29,6 +34,7 @@ export class TestScriptImpl implements TestScript {
   #commandTimeout = 5000;
   #serialPort?: SerialPort | null;
   #logFile?: TextFileWriter | null;
+  #testCounters: TestScriptCounters = {pass: 0, fail: 0};
 
   constructor(path: string, text: string, environment: Environment, protocol: CommandProtocol) {
     this.#filePath = path;
@@ -71,9 +77,14 @@ export class TestScriptImpl implements TestScript {
         this.#logFile?.close();
       })
       .finally(() => {
-        this.#logFile = null;
-        this.#currentLine = 0;
+        this.#reset();
       });
+  }
+
+  #reset(): void {
+    this.#logFile = null;
+    this.#currentLine = 0;
+    this.#testCounters = {pass: 0, fail: 0};
   }
 
   async #executeScript(): Promise<void> {
@@ -81,6 +92,7 @@ export class TestScriptImpl implements TestScript {
     this.#emit("start");
     try {
       for await (const {response, elapsed} of this.#executeSingleCommand()) {
+        if (!response) continue;
         const {argv, error} = this.#protocol.parseCommandResponse(response);
         if (error) {
           this.#emit("message", "error", response);
@@ -90,6 +102,7 @@ export class TestScriptImpl implements TestScript {
         switch (result) {
           case "FAIL":
           case "PASS":
+            ++this.#testCounters[result.toLowerCase() as Lowercase<TestOutCome>];
             this.#emit("test", response, result === "PASS", elapsed);
             break;
           default:
@@ -125,7 +138,7 @@ export class TestScriptImpl implements TestScript {
     return m?.[1].trim() ? m[1] : this.#nextLine();
   }
 
-  async *#executeSingleCommand() {
+  async *#executeSingleCommand(): AsyncGenerator<ExecutedCommandStats> {
     for (;;) {
       this.signal?.throwIfInterrupted();
       const row = this.#nextLine();
@@ -146,18 +159,23 @@ export class TestScriptImpl implements TestScript {
             await this.#serialPort?.close();
             this.#serialPort = null;
             break;
-          case "confirm":
+          case "confirm_test":
             if (argv.length !== 7) throw new TestScriptError("Bad parameters", "SyntaxError");
             try {
               const [prompt, testId, , , , , passValue] = argv;
               const ret = await this.confirm?.(this.#commandTimeout, prompt, {label: argv[2], value: argv[3]}, {label: argv[4], value: argv[5]});
+              const success = ret === passValue;
+              ++this.#testCounters[success ? "pass" : "fail"];
               yield {
-                elapsed: 0,
-                response: this.#protocol.stringifyTestCommandResponse(testId, ret === passValue),
+                ...NULL_RESPONSE,
+                response: this.#protocol.stringifyTestCommandResponse(testId, success),
               };
             } catch (e) {
               throw new TestScriptError(e.message, "InvocationError", e);
             }
+            break;
+          case "if":
+            yield this.#onCondition(argv[0], argv.slice(1));
             break;
           case "open_log_file":
             this.#emit("message", "info", row);
@@ -220,7 +238,7 @@ export class TestScriptImpl implements TestScript {
     return script.execute();
   }
 
-  async #sendCommandAndWaitResponse(cmd: string, timeout = this.#commandTimeout) {
+  async #sendCommandAndWaitResponse(cmd: string, timeout = this.#commandTimeout): Promise<ExecutedCommandStats> {
     this.#emit("command", cmd);
     if (!this.#serialPort) throw new TestScriptError("Serial port not open", "SyntaxError");
     const startTime = getCurrentTimeInMicroseconds();
@@ -234,5 +252,29 @@ export class TestScriptImpl implements TestScript {
     const endTime = getCurrentTimeInMicroseconds();
     if (response === null) throw new TestScriptError(`"${cmd}" timed out after ${timeout}ms`, "TimeoutError");
     return {response, elapsed: endTime - startTime};
+  }
+
+  #onCondition(condition: string, argv: string[]): Promise<ExecutedCommandStats> {
+    switch (condition) {
+      case "fail":
+        return this.#onFail(argv);
+      case "pass":
+        return this.#onPass(argv);
+    }
+    throw new TestScriptError(`Unknown condition ${JSON.stringify(condition)}`, "SyntaxError");
+  }
+
+  async #onFail(args: string[]): Promise<ExecutedCommandStats> {
+    if (this.#testCounters.fail > 0) {
+      return this.#sendCommandAndWaitResponse(this.#protocol.stringifyHardwareCommand(args[0], ...args.slice(1)));
+    }
+    return NULL_RESPONSE;
+  }
+
+  async #onPass(args: string[]): Promise<ExecutedCommandStats> {
+    if (this.#testCounters.pass > 0 && this.#testCounters.fail === 0) {
+      return this.#sendCommandAndWaitResponse(this.#protocol.stringifyHardwareCommand(args[0], ...args.slice(1)));
+    }
+    return NULL_RESPONSE;
   }
 }
