@@ -34,13 +34,14 @@ export class TestScriptImpl implements TestScript {
   #commandTimeout = 5000;
   #serialPort?: SerialPort | null;
   #logFile?: TextFileWriter | null;
-  #testCounters: TestScriptCounters = {pass: 0, fail: 0};
+  #testCounters: TestScriptCounters;
 
-  constructor(path: string, text: string, environment: Environment, protocol: CommandProtocol) {
+  constructor(path: string, text: string, environment: Environment, protocol: CommandProtocol, counters: TestScriptCounters = {pass: 0, fail: 0}) {
     this.#filePath = path;
     this.#text = text.split(/\r\n|\r|\n/gm);
     this.#environment = environment;
     this.#protocol = protocol;
+    this.#testCounters = counters;
   }
 
   get filePath(): string | null {
@@ -226,6 +227,7 @@ export class TestScriptImpl implements TestScript {
   async #runScript(scriptFile: string): Promise<void> {
     const script: TestScript = await loadScript({
       scriptFile,
+      counters: this.#testCounters,
       environment: this.#environment,
       protocol: this.#protocol,
       parentScript: this,
