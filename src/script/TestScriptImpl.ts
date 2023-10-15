@@ -35,6 +35,7 @@ export class TestScriptImpl implements TestScript {
   #serialPort?: SerialPort | null;
   #logFile?: TextFileWriter | null;
   #testCounters: TestScriptCounters;
+  #cancelCurrentCommand?: () => void;
 
   constructor(path: string, text: string, environment: Environment, protocol: CommandProtocol, counters: TestScriptCounters = {pass: 0, fail: 0}) {
     this.#filePath = path;
@@ -69,6 +70,8 @@ export class TestScriptImpl implements TestScript {
   }
 
   async execute(): Promise<void> {
+    const onInterrupt = () => this.#cancelCurrentCommand?.();
+    this.signal?.once("interrupt", onInterrupt);
     return this.#executeScript()
       .catch(err => {
         this.#emit("error", err);
@@ -78,6 +81,7 @@ export class TestScriptImpl implements TestScript {
         this.#logFile?.close();
       })
       .finally(() => {
+        this.signal?.off("interrupt", onInterrupt);
         this.#reset();
       });
   }
@@ -172,7 +176,9 @@ export class TestScriptImpl implements TestScript {
                 response: this.#protocol.stringifyTestCommandResponse(testId, success),
               };
             } catch (e) {
-              throw new TestScriptError(e.message, "InvocationError", e);
+              if (!this.signal.interrupted) {
+                throw new TestScriptError(e.message, "InvocationError", e);
+              }
             }
             break;
           case "if":
@@ -212,7 +218,13 @@ export class TestScriptImpl implements TestScript {
           case "wait": {
             const interval = parseInterval(argv[0]);
             this.#emit("message", "info", row);
-            await sleep(interval);
+            const sleepResult = sleep(interval);
+            this.#cancelCurrentCommand = sleepResult.cancel;
+            try {
+              await sleepResult.promise;
+            } finally {
+              this.#cancelCurrentCommand = null;
+            }
             break;
           }
           default:
@@ -247,12 +259,20 @@ export class TestScriptImpl implements TestScript {
     await this.#serialPort.write(cmd);
     let response: string | null;
     try {
-      response = await this.#serialPort.read(timeout);
+      const result = this.#serialPort.read(timeout);
+      this.#cancelCurrentCommand = result.cancel;
+      response = await result.promise;
     } catch (e) {
       throw new TestScriptError(e.message, "HardwareError", e);
+    } finally {
+      this.#cancelCurrentCommand = null;
     }
     const endTime = getCurrentTimeInMicroseconds();
-    if (response === null) throw new TestScriptError(`"${cmd}" timed out after ${timeout}ms`, "TimeoutError");
+    if (response === null) {
+      if (!this.signal.interrupted) {
+        throw new TestScriptError(`"${cmd}" timed out after ${timeout}ms`, "TimeoutError");
+      }
+    }
     return {response, elapsed: endTime - startTime};
   }
 

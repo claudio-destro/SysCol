@@ -141,8 +141,12 @@ class TestSerialPortMock extends SerialPortMock {
       const rnd = Math.random();
       const data = `${response ?? command.toUpperCase()}${rnd <= 0.333 ? "\r" : rnd <= 0.666 ? "\n" : "\r\n"}`; // NOSONAR
       console.log(`<< ${JSON.stringify(command)}`);
-      this.port.emitData(data);
-      console.log(`>> ${JSON.stringify(data)}`);
+      setTimeout(() => {
+        if (this.port.isOpen) {
+          this.port.emitData(data);
+          console.log(`>> ${JSON.stringify(data)}`);
+        }
+      }, rnd * 5000); // NOSONAR
       return true;
     }
     return false;

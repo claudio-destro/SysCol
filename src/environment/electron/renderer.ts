@@ -1,6 +1,6 @@
 import "../../index.css";
 
-import {clearLogs, confirm, getTestResults, logCommand, logCommandResponse, logError, logMessage, logStatus, logTest} from "./index";
+import {clearLogs, confirm, getTestResults, interrupt, logCommand, logCommandResponse, logError, logMessage, logStatus, logTest} from "./index";
 
 export const setScriptFileName = async (file: string): Promise<void> => {
   document.title = file;
@@ -21,13 +21,11 @@ const logStopped = async (): Promise<void> => {
   return logStatus("No tests");
 };
 
-const logInterrupt = async (): Promise<void> => logStatus("Interrupt...");
-
 SysCol.registerEventListener("setScriptFileName", setScriptFileName);
 SysCol.registerEventListener("clearLogs", clearLogs);
 SysCol.registerEventListener("confirm", confirm);
 SysCol.registerEventListener("error", logError);
-SysCol.registerEventListener("interrupt", logInterrupt);
+SysCol.registerEventListener("interrupt", interrupt);
 SysCol.registerEventListener("message", logMessage);
 SysCol.registerEventListener("command", logCommand);
 SysCol.registerEventListener("response", logCommandResponse);

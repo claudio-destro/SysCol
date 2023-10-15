@@ -43,8 +43,10 @@ export const interruptScript = async (window: BrowserWindow) => {
   if (store) {
     const {script, controller} = store;
     if (script.readyState === "running") {
-      window.webContents.send("interrupt");
-      controller.interrupt();
+      const makeTestScriptHandler = makeTestScriptHandlerFactory(script, window);
+      const interrupt = makeTestScriptHandler("interrupt");
+      controller.interrupt(); // XXX Interrupt controller first!
+      await interrupt();
     }
   }
 };

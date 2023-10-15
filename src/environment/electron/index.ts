@@ -87,6 +87,12 @@ export const clearLogs = async (): Promise<void> => {
 
 export const getTestResults = () => ({...tests});
 
+export const interrupt = async (): Promise<void> => {
+  interrupt_confirm();
+};
+
+let interrupt_confirm = () => {};
+
 export const confirm = async (lineno: number, timeout: number, prompt: string, ...options: TestConfirmOption[]): Promise<string> => {
   await logMessage(lineno, "question", prompt);
   const row = document.createElement("p");
@@ -94,28 +100,30 @@ export const confirm = async (lineno: number, timeout: number, prompt: string, .
   return new Promise((resolve, reject) => {
     const timeoutId = setTimeout(
       () => {
-        row.parentNode?.removeChild(row);
+        clear();
         reject(new Error("Timeout"));
       },
       Math.max(timeout, 30_000),
     );
 
-    // const clearButtons = () => {
-    //   clearTimeout(timeoutId);
-    //   row.querySelectorAll('input[type="button"]').forEach((btn: HTMLInputElement) => {
-    //     btn.disabled = true;
-    //     btn.onclick = null;
-    //   });
-    // };
+    const clear = () => {
+      clearTimeout(timeoutId);
+      row.parentNode?.removeChild(row);
+      interrupt_confirm = () => {};
+    };
+
+    interrupt_confirm = () => {
+      clear();
+      reject(new Error("Interrupt"));
+    };
 
     for (const option of options) {
       const btn = document.createElement("input");
       btn.type = "button";
       btn.value = option.label;
       btn.onclick = () => {
-        row.parentNode?.removeChild(row);
+        clear();
         logMessage(lineno, "question", `${option.label} - ${JSON.stringify(option.value)}`);
-        clearTimeout(timeoutId);
         resolve(option.value);
       };
       row.append(btn);

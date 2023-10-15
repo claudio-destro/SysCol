@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 
 interface SyncHandlers {
   confirm: TestConfirmFunction;
+  interrupt: () => Promise<void>;
 }
 
 type SyncHandlersName = keyof SyncHandlers;

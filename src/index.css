@@ -248,7 +248,7 @@ html, body {
 
   #sys_col_bar.tests-passed .sys_col_status,
   #sys_col_bar.tests-failed .sys_col_status {
-    color: #80CCCC;
+    color: #CCCCCC;
   }
 
   .sys_col_message.info:before {
