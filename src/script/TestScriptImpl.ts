@@ -181,8 +181,21 @@ export class TestScriptImpl implements TestScript {
               }
             }
             break;
+          case "continue":
+            if (argv.length !== 2) throw new TestScriptError("Bad parameters", "SyntaxError");
+            try {
+              const [prompt, label] = argv;
+              await this.confirm?.(this.#commandTimeout, prompt, {label, value: "OK"});
+            } catch (e) {
+              if (!this.signal.interrupted) {
+                throw new TestScriptError(e.message, "InvocationError", e);
+              }
+            }
+            break;
           case "if":
             yield this.#onCondition(argv[0], argv.slice(1));
+            break;
+          case "on":
             break;
           case "open_log_file":
             this.#emit("message", "info", row);
