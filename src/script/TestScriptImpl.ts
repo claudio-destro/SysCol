@@ -26,15 +26,15 @@ const assertEqual =
   (wanted: number) =>
   ({length}: string[]): void => {
     if (length !== wanted) {
-      throw new TestScriptError(`Bad parameters (${length} !== ${wanted})`, "SyntaxError");
+      throw new TestScriptError(`Bad parameters (${wanted})`, "SyntaxError");
     }
   };
 
 const assertGreaterThanOrEqual =
   (wanted: number) =>
   ({length}: string[]): void => {
-    if (length <= wanted) {
-      throw new TestScriptError(`Bad parameters (${length} <= ${wanted})`, "SyntaxError");
+    if (length < wanted) {
+      throw new TestScriptError(`Bad parameters (>=${wanted})`, "SyntaxError");
     }
   };
 
