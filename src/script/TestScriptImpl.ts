@@ -14,12 +14,25 @@ import {loadScript} from "./macros/loadScript";
 import {LogOutputType} from "./LogOutputType";
 import {CommandProtocol, TestOutCome} from "./CommandProtocol";
 import {TestScriptCounters} from "./TestScriptCounters";
+import {Command} from "./Command";
 
 const getCurrentTimeInMicroseconds = () => (performance.now() * 1_000) | 0;
 
 type ExecutedCommandStats = {response: string; elapsed: number};
 
 const NULL_RESPONSE: ExecutedCommandStats = {response: null, elapsed: -1} as const;
+
+const assertEqual = (wanted: number) => ({length}: string[]): void => {
+  if (length !== wanted) {
+    throw new TestScriptError(`Bad parameters (${length} !== ${wanted})`, "SyntaxError");
+  }
+};
+
+const assertGreaterThanOrEqual = (wanted: number) => ({length}: string[]): void => {
+  if (length <= wanted) {
+    throw new TestScriptError(`Bad parameters (${length} <= ${wanted})`, "SyntaxError");
+  }
+};
 
 export class TestScriptImpl implements TestScript {
   signal?: TestScriptInterruptSignal | null;
@@ -29,6 +42,7 @@ export class TestScriptImpl implements TestScript {
   readonly #text: Array<string>;
   readonly #environment: Environment;
   readonly #protocol: CommandProtocol;
+  #globalConditions: Record<string, string[]> = {};
   #readyState: TestScriptReadyState = "new";
   #currentLine = 0;
   #commandTimeout = 5000;
@@ -36,8 +50,6 @@ export class TestScriptImpl implements TestScript {
   #logFile?: TextFileWriter | null;
   #testCounters: TestScriptCounters;
   #cancelCurrentCommand?: () => void;
-
-  readonly #statues: Record<string, string[]> = {};
 
   constructor(path: string, text: string, environment: Environment, protocol: CommandProtocol, counters: TestScriptCounters = {pass: 0, fail: 0}) {
     this.#filePath = path;
@@ -92,6 +104,7 @@ export class TestScriptImpl implements TestScript {
     this.#logFile = null;
     this.#currentLine = 0;
     this.#testCounters = {pass: 0, fail: 0};
+    this.#globalConditions = {};
   }
 
   async #executeScript(): Promise<void> {
@@ -118,10 +131,10 @@ export class TestScriptImpl implements TestScript {
         }
       }
       this.#readyState = "stopped";
-      await this.#onGlobalStatus("end");
+      await this.#onStatus("end");
     } catch (e) {
       this.#readyState = "stopped";
-      await this.#onGlobalStatus("error");
+      await this.#onStatus("error");
       const err = e as TestScriptError;
       err?.addScript(this);
       throw err;
@@ -140,6 +153,119 @@ export class TestScriptImpl implements TestScript {
     return this.#events.listeners(event) as Array<TestScriptListeners[T]>;
   }
 
+  readonly #MACROS: Readonly<Record<string, {
+    validateArguments: (args: string[]) => void,
+    executeMacro: (command: Command) => Promise<ExecutedCommandStats | void>
+  }>> = {
+    close_log_file: {
+      validateArguments: assertEqual(0),
+      executeMacro: async () => {
+        await this.#logFile?.close();
+        this.#logFile = null;
+      }
+    },
+    close_serial_port: {
+      validateArguments: assertEqual(0),
+      executeMacro: async () => {
+        await this.#serialPort?.close();
+        this.#serialPort = null;
+      }
+    },
+    confirm_test: {
+      validateArguments: assertEqual(7),
+      executeMacro: async ({argv: [prompt, testId, label, value, label1, value1, passValue]}) => {
+        try {
+          const ret = await this.confirm?.(this.#commandTimeout, prompt, {label, value}, {label: label1, value: value1});
+          const success = ret === passValue;
+          ++this.#testCounters[success ? "pass" : "fail"];
+          return {
+            ...NULL_RESPONSE,
+            response: this.#protocol.stringifyTestCommandResponse(testId, success),
+          };
+        } catch (e) {
+          if (!this.signal.interrupted) {
+            throw new TestScriptError(e.message, "InvocationError", e);
+          }
+        }
+      }
+    },
+    continue: {
+      validateArguments: assertEqual(2),
+      executeMacro: async ({argv: [prompt, label]}) => {
+        try {
+          await this.confirm?.(this.#commandTimeout, prompt, {label, value: "OK"});
+        } catch (e) {
+          if (!this.signal.interrupted) {
+            throw new TestScriptError(e.message, "InvocationError", e);
+          }
+        }
+      }
+    },
+    if: {
+      validateArguments: assertGreaterThanOrEqual(2),
+      executeMacro: async ({argv}) => {
+        await this.#ifCondition(argv[0], argv.slice(1));
+      }
+    },
+    on: {
+      validateArguments: assertGreaterThanOrEqual(2),
+      executeMacro: async ({argv}) => {
+        await this.#onCondition(argv[0], argv.slice(1));
+      }
+    },
+    open_log_file: {
+      validateArguments: assertEqual(2),
+      executeMacro: async ({argv: [logFile, format]}) => {
+        await this.#logFile?.close();
+        this.#logFile = await openLogFile({
+          logFile,
+          format: format as LogOutputType,
+          environment: this.#environment,
+          protocol: this.#protocol,
+          parentScript: this,
+        });
+      }
+    },
+    open_serial_port: {
+      validateArguments: assertEqual(2),
+      executeMacro: async ({argv}) => {
+        await this.#serialPort?.close();
+        this.#serialPort = await openSerialPort({
+          path: argv[0],
+          args: argv[1],
+          environment: this.#environment,
+          protocol: this.#protocol,
+          parentScript: this,
+        });
+      }
+    },
+    run_script: {
+      validateArguments: assertEqual(1),
+      executeMacro: async ({argv: [path]}) => {
+        await this.#runScript(path)
+      },
+    },
+    timeout: {
+      validateArguments: assertEqual(1),
+      executeMacro: async ({argv: [timeout]}) => {
+        this.#commandTimeout = parseInterval(timeout);
+      }
+    },
+    wait: {
+      validateArguments: assertEqual(1),
+      executeMacro: async ({argv: [timeout]}) => {
+        const interval = parseInterval(timeout);
+        const sleepResult = sleep(interval);
+        this.#cancelCurrentCommand = sleepResult.cancel;
+        try {
+          await sleepResult.promise;
+        } finally {
+          this.#cancelCurrentCommand = null;
+        }
+      }
+    },
+  } as const;
+
   #nextLine(): string | null {
     if (this.#currentLine >= this.#text.length) return null;
     const row = this.#text[this.#currentLine++];
@@ -153,107 +279,22 @@ export class TestScriptImpl implements TestScript {
       const row = this.#nextLine();
       if (row === null) return;
       const {command, commandLine, argv, macro} = this.#protocol.parseCommand(row);
-      if (macro) {
-        switch (command) {
-          case "echo":
-            this.#emit("message", "log", commandLine);
-            break;
-          case "close_log_file":
-            this.#emit("message", "info", row);
-            await this.#logFile?.close();
-            this.#logFile = null;
-            break;
-          case "close_serial_port":
-            this.#emit("message", "info", row);
-            await this.#serialPort?.close();
-            this.#serialPort = null;
-            break;
-          case "confirm_test":
-            this.#emit("message", "info", row);
-            if (argv.length !== 7) throw new TestScriptError("Bad parameters", "SyntaxError");
-            try {
-              const [prompt, testId, , , , , passValue] = argv;
-              const ret = await this.confirm?.(this.#commandTimeout, prompt, {label: argv[2], value: argv[3]}, {label: argv[4], value: argv[5]});
-              const success = ret === passValue;
-              ++this.#testCounters[success ? "pass" : "fail"];
-              yield {
-                ...NULL_RESPONSE,
-                response: this.#protocol.stringifyTestCommandResponse(testId, success),
-              };
-            } catch (e) {
-              if (!this.signal.interrupted) {
-                throw new TestScriptError(e.message, "InvocationError", e);
-              }
-            }
-            break;
-          case "continue":
-            this.#emit("message", "info", row);
-            if (argv.length !== 2) throw new TestScriptError("Bad parameters", "SyntaxError");
-            try {
-              const [prompt, label] = argv;
-              await this.confirm?.(this.#commandTimeout, prompt, {label, value: "OK"});
-            } catch (e) {
-              if (!this.signal.interrupted) {
-                throw new TestScriptError(e.message, "InvocationError", e);
-              }
-            }
-            break;
-          case "if":
-            this.#emit("message", "info", row);
-            yield this.#onCondition(argv[0], argv.slice(1));
-            break;
-          case "on":
-            this.#emit("message", "info", row);
-            yield this.#onGlobalCondition(argv[0], argv.slice(1));
-            break;
-          case "open_log_file":
-            this.#emit("message", "info", row);
-            await this.#logFile?.close();
-            this.#logFile = await openLogFile({
-              logFile: argv[0],
-              format: argv[1] as LogOutputType,
-              environment: this.#environment,
-              protocol: this.#protocol,
-              parentScript: this,
-            });
-            this.#emit("message", "info", this.#logFile.filePath);
-            break;
-          case "open_serial_port":
-            this.#emit("message", "info", row);
-            await this.#serialPort?.close();
-            this.#serialPort = await openSerialPort({
-              path: argv[0],
-              args: argv[1],
-              environment: this.#environment,
-              protocol: this.#protocol,
-              parentScript: this,
-            });
-            break;
-          case "run_script":
-            this.#emit("message", "info", row);
-            await this.#runScript(argv[0]);
-            break;
-          case "timeout":
-            this.#commandTimeout = parseInterval(argv[0]);
-            this.#emit("message", "info", row);
-            break;
-          case "wait": {
-            const interval = parseInterval(argv[0]);
-            this.#emit("message", "info", row);
-            const sleepResult = sleep(interval);
-            this.#cancelCurrentCommand = sleepResult.cancel;
-            try {
-              await sleepResult.promise;
-            } finally {
-              this.#cancelCurrentCommand = null;
-            }
-            break;
-          }
-          default:
-            throw new TestScriptError(`Unrecognized command ${JSON.stringify(command)}`, "SyntaxError");
-        }
-      } else {
+      if (!macro) {
         yield this.#sendCommandAndWaitResponse(this.#protocol.stringifyHardwareCommand(command, ...argv));
+      } else if (command === "echo") {
+        this.#emit("message", "log", commandLine);
+      } else {
+        this.#emit("message", "info", row);
+        const executor = this.#MACROS[command];
+        if (executor) {
+          const {validateArguments, executeMacro} = executor;
+          validateArguments(argv);
+          const ret = await executeMacro({commandLine, argv} as Command);
+          if (ret) yield ret;
+          // continue
+        } else {
+          throw new TestScriptError(`Unrecognized command ${JSON.stringify(command)}`, "SyntaxError");
+        }
       }
     }
   }
@@ -302,34 +343,34 @@ export class TestScriptImpl implements TestScript {
     return this.#sendCommandAndWaitResponse(this.#protocol.stringifyHardwareCommand(args[0], ...args.slice(1)));
   }
 
-  #onCondition(condition: string, argv: string[]): Promise<ExecutedCommandStats> {
+  #ifCondition(condition: string, argv: string[]): Promise<ExecutedCommandStats> {
     switch (condition) {
       case "fail":
-        return this.#onFail(argv);
+        return this.#ifFail(argv);
       case "pass":
-        return this.#onPass(argv);
+        return this.#ifPass(argv);
     }
     throw new TestScriptError(`Unknown condition ${JSON.stringify(condition)}`, "SyntaxError");
   }
 
-  async #onFail(args: string[]): Promise<ExecutedCommandStats> {
+  async #ifFail(args: string[]): Promise<ExecutedCommandStats> {
     return this.#testCounters.fail > 0 ? this.#sendOneCommandAndWaitResponse(args) : NULL_RESPONSE;
   }
 
-  async #onPass(args: string[]): Promise<ExecutedCommandStats> {
+  async #ifPass(args: string[]): Promise<ExecutedCommandStats> {
     return this.#testCounters.pass > 0 && this.#testCounters.fail === 0 ? this.#sendOneCommandAndWaitResponse(args) : NULL_RESPONSE;
   }
 
-  async #onGlobalCondition(condition: string, argv: string[]): Promise<ExecutedCommandStats> {
+  async #onCondition(condition: string, argv: string[]): Promise<ExecutedCommandStats> {
     if (condition && argv.length) {
-      this.#statues[condition] = argv;
+      this.#globalConditions[condition] = argv;
       return NULL_RESPONSE;
     }
     throw new TestScriptError(`Unknown global condition ${JSON.stringify(condition)}`, "SyntaxError");
   }
 
-  async #onGlobalStatus(status: string): Promise<void> {
-    const args: string[] | undefined | null = this.#statues[status];
+  async #onStatus(status: string): Promise<void> {
+    const args: string[] | undefined | null = this.#globalConditions[status];
     if (args?.length > 0) {
       try {
         const {response, elapsed} = await this.#sendOneCommandAndWaitResponse(args);
