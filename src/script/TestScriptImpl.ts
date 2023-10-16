@@ -22,17 +22,21 @@ type ExecutedCommandStats = {response: string; elapsed: number};
 
 const NULL_RESPONSE: ExecutedCommandStats = {response: null, elapsed: -1} as const;
 
-const assertEqual = (wanted: number) => ({length}: string[]): void => {
-  if (length !== wanted) {
-    throw new TestScriptError(`Bad parameters (${length} !== ${wanted})`, "SyntaxError");
-  }
-};
+const assertEqual =
+  (wanted: number) =>
+  ({length}: string[]): void => {
+    if (length !== wanted) {
+      throw new TestScriptError(`Bad parameters (${length} !== ${wanted})`, "SyntaxError");
+    }
+  };
 
-const assertGreaterThanOrEqual = (wanted: number) => ({length}: string[]): void => {
-  if (length <= wanted) {
-    throw new TestScriptError(`Bad parameters (${length} <= ${wanted})`, "SyntaxError");
-  }
-};
+const assertGreaterThanOrEqual =
+  (wanted: number) =>
+  ({length}: string[]): void => {
+    if (length <= wanted) {
+      throw new TestScriptError(`Bad parameters (${length} <= ${wanted})`, "SyntaxError");
+    }
+  };
 
 export class TestScriptImpl implements TestScript {
   signal?: TestScriptInterruptSignal | null;
@@ -153,23 +157,28 @@ export class TestScriptImpl implements TestScript {
     return this.#events.listeners(event) as Array<TestScriptListeners[T]>;
   }
 
-  readonly #MACROS: Readonly<Record<string, {
-    validateArguments: (args: string[]) => void,
-    executeMacro: (command: Command) => Promise<ExecutedCommandStats | void>
-  }>> = {
+  readonly #MACROS: Readonly<
+    Record<
+      string,
+      {
+        validateArguments: (args: string[]) => void;
+        executeMacro: (command: Command) => Promise<ExecutedCommandStats | void>;
+      }
+    >
+  > = {
     close_log_file: {
       validateArguments: assertEqual(0),
       executeMacro: async () => {
         await this.#logFile?.close();
         this.#logFile = null;
-      }
+      },
     },
     close_serial_port: {
       validateArguments: assertEqual(0),
       executeMacro: async () => {
         await this.#serialPort?.close();
         this.#serialPort = null;
-      }
+      },
     },
     confirm_test: {
       validateArguments: assertEqual(7),
@@ -187,7 +196,7 @@ export class TestScriptImpl implements TestScript {
             throw new TestScriptError(e.message, "InvocationError", e);
           }
         }
-      }
+      },
     },
     continue: {
       validateArguments: assertEqual(2),
@@ -199,19 +208,19 @@ export class TestScriptImpl implements TestScript {
             throw new TestScriptError(e.message, "InvocationError", e);
           }
         }
-      }
+      },
     },
     if: {
       validateArguments: assertGreaterThanOrEqual(2),
       executeMacro: async ({argv}) => {
         await this.#ifCondition(argv[0], argv.slice(1));
-      }
+      },
     },
     on: {
       validateArguments: assertGreaterThanOrEqual(2),
       executeMacro: async ({argv}) => {
         await this.#onCondition(argv[0], argv.slice(1));
-      }
+      },
     },
     open_log_file: {
       validateArguments: assertEqual(2),
@@ -224,7 +233,7 @@ export class TestScriptImpl implements TestScript {
           protocol: this.#protocol,
           parentScript: this,
         });
-      }
+      },
     },
     open_serial_port: {
       validateArguments: assertEqual(2),
@@ -237,19 +246,19 @@ export class TestScriptImpl implements TestScript {
           protocol: this.#protocol,
           parentScript: this,
         });
-      }
+      },
     },
     run_script: {
       validateArguments: assertEqual(1),
       executeMacro: async ({argv: [path]}) => {
-        await this.#runScript(path)
+        await this.#runScript(path);
       },
     },
     timeout: {
       validateArguments: assertEqual(1),
       executeMacro: async ({argv: [timeout]}) => {
         this.#commandTimeout = parseInterval(timeout);
-      }
+      },
     },
     wait: {
       validateArguments: assertEqual(1),
@@ -262,7 +271,7 @@ export class TestScriptImpl implements TestScript {
         } finally {
           this.#cancelCurrentCommand = null;
         }
-      }
+      },
     },
   } as const;
 
