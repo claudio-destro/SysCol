@@ -12,5 +12,5 @@ export const sleep = (millis: number): CancelableResult<void> => {
   return {
     cancel: onCancel,
     promise,
-  }
-}
+  };
+};

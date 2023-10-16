@@ -91,7 +91,9 @@ export const interrupt = async (): Promise<void> => {
   interrupt_confirm();
 };
 
-let interrupt_confirm = () => {};
+let interrupt_confirm = () => {
+  /* EMPTY */
+};
 
 export const confirm = async (lineno: number, timeout: number, prompt: string, ...options: TestConfirmOption[]): Promise<string> => {
   await logMessage(lineno, "question", prompt);

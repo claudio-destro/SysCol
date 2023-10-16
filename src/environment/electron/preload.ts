@@ -29,7 +29,7 @@ const SYS_COL_API: SysColApi = {
     const ipcListener = async (event: Electron.IpcRendererEvent, responseChannel: string, errorChannel: string, ...parameters: Parameters<IpcRendererEventListenerMap[E]>) => {
       console.log(...parameters);
       try {
-        const ret = await callback.call(null, ...parameters);
+        const ret = await callback.call(null, ...parameters); // NOSONAR typescript:S6676
         event.sender.send(responseChannel, ret);
       } catch (e) {
         console.error(e);
