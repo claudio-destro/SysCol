@@ -37,6 +37,8 @@ export class TestScriptImpl implements TestScript {
   #testCounters: TestScriptCounters;
   #cancelCurrentCommand?: () => void;
 
+  readonly #statues: Record<string, string[]> = {};
+
   constructor(path: string, text: string, environment: Environment, protocol: CommandProtocol, counters: TestScriptCounters = {pass: 0, fail: 0}) {
     this.#filePath = path;
     this.#text = text.split(/\r\n|\r|\n/gm);
@@ -116,8 +118,10 @@ export class TestScriptImpl implements TestScript {
         }
       }
       this.#readyState = "stopped";
+      await this.#onGlobalStatus("end");
     } catch (e) {
       this.#readyState = "stopped";
+      await this.#onGlobalStatus("error");
       const err = e as TestScriptError;
       err?.addScript(this);
       throw err;
@@ -165,6 +169,7 @@ export class TestScriptImpl implements TestScript {
             this.#serialPort = null;
             break;
           case "confirm_test":
+            this.#emit("message", "info", row);
             if (argv.length !== 7) throw new TestScriptError("Bad parameters", "SyntaxError");
             try {
               const [prompt, testId, , , , , passValue] = argv;
@@ -182,6 +187,7 @@ export class TestScriptImpl implements TestScript {
             }
             break;
           case "continue":
+            this.#emit("message", "info", row);
             if (argv.length !== 2) throw new TestScriptError("Bad parameters", "SyntaxError");
             try {
               const [prompt, label] = argv;
@@ -193,9 +199,12 @@ export class TestScriptImpl implements TestScript {
             }
             break;
           case "if":
+            this.#emit("message", "info", row);
             yield this.#onCondition(argv[0], argv.slice(1));
             break;
           case "on":
+            this.#emit("message", "info", row);
+            yield this.#onGlobalCondition(argv[0], argv.slice(1));
             break;
           case "open_log_file":
             this.#emit("message", "info", row);
@@ -289,6 +298,10 @@ export class TestScriptImpl implements TestScript {
     return {response, elapsed: endTime - startTime};
   }
 
+  async #sendOneCommandAndWaitResponse(args: string[]): Promise<ExecutedCommandStats> {
+    return this.#sendCommandAndWaitResponse(this.#protocol.stringifyHardwareCommand(args[0], ...args.slice(1)));
+  }
+
   #onCondition(condition: string, argv: string[]): Promise<ExecutedCommandStats> {
     switch (condition) {
       case "fail":
@@ -300,16 +313,30 @@ export class TestScriptImpl implements TestScript {
   }
 
   async #onFail(args: string[]): Promise<ExecutedCommandStats> {
-    if (this.#testCounters.fail > 0) {
-      return this.#sendCommandAndWaitResponse(this.#protocol.stringifyHardwareCommand(args[0], ...args.slice(1)));
-    }
-    return NULL_RESPONSE;
+    return this.#testCounters.fail > 0 ? this.#sendOneCommandAndWaitResponse(args) : NULL_RESPONSE;
   }
 
   async #onPass(args: string[]): Promise<ExecutedCommandStats> {
-    if (this.#testCounters.pass > 0 && this.#testCounters.fail === 0) {
-      return this.#sendCommandAndWaitResponse(this.#protocol.stringifyHardwareCommand(args[0], ...args.slice(1)));
+    return this.#testCounters.pass > 0 && this.#testCounters.fail === 0 ? this.#sendOneCommandAndWaitResponse(args) : NULL_RESPONSE;
+  }
+
+  async #onGlobalCondition(condition: string, argv: string[]): Promise<ExecutedCommandStats> {
+    if (condition && argv.length) {
+      this.#statues[condition] = argv;
+      return NULL_RESPONSE;
     }
-    return NULL_RESPONSE;
+    throw new TestScriptError(`Unknown global condition ${JSON.stringify(condition)}`, "SyntaxError");
+  }
+
+  async #onGlobalStatus(status: string): Promise<void> {
+    const args: string[] | undefined | null = this.#statues[status];
+    if (args?.length > 0) {
+      try {
+        const {response, elapsed} = await this.#sendOneCommandAndWaitResponse(args);
+        this.#emit("response", response, elapsed);
+      } catch (e) {
+        this.#emit("error", e);
+      }
+    }
   }
 }
