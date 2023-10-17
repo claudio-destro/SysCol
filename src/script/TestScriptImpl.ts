@@ -22,19 +22,19 @@ type ExecutedCommandStats = {response: string; elapsed: number};
 
 const NULL_RESPONSE: ExecutedCommandStats = {response: null, elapsed: -1} as const;
 
-const assertEqual =
-  (wanted: number) =>
-  ({length}: string[]): void => {
-    if (length !== wanted) {
+const validateArgsEq =
+  (wanted: number): ((args: string[]) => void) =>
+  ({length: numberOfArgs}: string[]): void => {
+    if (numberOfArgs !== wanted) {
       throw new TestScriptError(`Bad parameters (${wanted})`, "SyntaxError");
     }
   };
 
-const assertGreaterThanOrEqual =
-  (wanted: number) =>
-  ({length}: string[]): void => {
-    if (length < wanted) {
-      throw new TestScriptError(`Bad parameters (>=${wanted})`, "SyntaxError");
+const validateMinimumArgs =
+  (minimum: number): ((args: string[]) => void) =>
+  ({length: numberOfArgs}: string[]): void => {
+    if (numberOfArgs < minimum) {
+      throw new TestScriptError(`Bad parameters (>=${minimum})`, "SyntaxError");
     }
   };
 
@@ -135,10 +135,10 @@ export class TestScriptImpl implements TestScript {
         }
       }
       this.#readyState = "stopped";
-      await this.#onStatus("end");
+      await this.#executeOnCondition("end");
     } catch (e) {
       this.#readyState = "stopped";
-      await this.#onStatus("error");
+      await this.#executeOnCondition("error");
       const err = e as TestScriptError;
       err?.addScript(this);
       throw err;
@@ -161,30 +161,30 @@ export class TestScriptImpl implements TestScript {
     Record<
       string,
       {
-        validateArguments: (args: string[]) => void;
+        validateArgs: (args: string[]) => void;
         executeMacro: (command: Command) => Promise<ExecutedCommandStats | void>;
       }
     >
   > = {
     close_log_file: {
-      validateArguments: assertEqual(0),
-      executeMacro: async () => {
+      validateArgs: validateArgsEq(0),
+      executeMacro: async (): Promise<void> => {
         await this.#logFile?.close();
         this.#logFile = null;
       },
     },
     close_serial_port: {
-      validateArguments: assertEqual(0),
-      executeMacro: async () => {
+      validateArgs: validateArgsEq(0),
+      executeMacro: async (): Promise<void> => {
         await this.#serialPort?.close();
         this.#serialPort = null;
       },
     },
     confirm_test: {
-      validateArguments: assertEqual(7),
-      executeMacro: async ({argv: [prompt, testId, label, value, label1, value1, passValue]}) => {
+      validateArgs: validateArgsEq(7),
+      executeMacro: async ({argv: [prompt, testId, label0, value0, label1, value1, passValue]}): Promise<ExecutedCommandStats> => {
         try {
-          const ret = await this.confirm?.(this.#commandTimeout, prompt, {label, value}, {label: label1, value: value1});
+          const ret = await this.confirm?.(this.#commandTimeout, prompt, {label: label0, value: value0}, {label: label1, value: value1});
           const success = ret === passValue;
           ++this.#testCounters[success ? "pass" : "fail"];
           return {
@@ -195,12 +195,13 @@ export class TestScriptImpl implements TestScript {
           if (!this.signal.interrupted) {
             throw new TestScriptError(e.message, "InvocationError", e);
           }
+          // ignore
         }
       },
     },
     continue: {
-      validateArguments: assertEqual(2),
-      executeMacro: async ({argv: [prompt, label]}) => {
+      validateArgs: validateArgsEq(2),
+      executeMacro: async ({argv: [prompt, label]}): Promise<void> => {
         try {
           await this.confirm?.(this.#commandTimeout, prompt, {label, value: "OK"});
         } catch (e) {
@@ -211,20 +212,20 @@ export class TestScriptImpl implements TestScript {
       },
     },
     if: {
-      validateArguments: assertGreaterThanOrEqual(2),
-      executeMacro: async ({argv}) => {
+      validateArgs: validateMinimumArgs(2),
+      executeMacro: async ({argv}): Promise<void> => {
         await this.#ifCondition(argv[0], argv.slice(1));
       },
     },
     on: {
-      validateArguments: assertGreaterThanOrEqual(2),
-      executeMacro: async ({argv}) => {
+      validateArgs: validateMinimumArgs(2),
+      executeMacro: async ({argv}): Promise<void> => {
         await this.#onCondition(argv[0], argv.slice(1));
       },
     },
     open_log_file: {
-      validateArguments: assertEqual(2),
-      executeMacro: async ({argv: [logFile, format]}) => {
+      validateArgs: validateArgsEq(2),
+      executeMacro: async ({argv: [logFile, format]}): Promise<void> => {
         await this.#logFile?.close();
         this.#logFile = await openLogFile({
           logFile,
@@ -236,8 +237,8 @@ export class TestScriptImpl implements TestScript {
       },
     },
     open_serial_port: {
-      validateArguments: assertEqual(2),
-      executeMacro: async ({argv}) => {
+      validateArgs: validateArgsEq(2),
+      executeMacro: async ({argv}): Promise<void> => {
         await this.#serialPort?.close();
         this.#serialPort = await openSerialPort({
           path: argv[0],
@@ -249,20 +250,20 @@ export class TestScriptImpl implements TestScript {
       },
     },
     run_script: {
-      validateArguments: assertEqual(1),
-      executeMacro: async ({argv: [path]}) => {
+      validateArgs: validateArgsEq(1),
+      executeMacro: async ({argv: [path]}): Promise<void> => {
         await this.#runScript(path);
       },
     },
     timeout: {
-      validateArguments: assertEqual(1),
-      executeMacro: async ({argv: [timeout]}) => {
+      validateArgs: validateArgsEq(1),
+      executeMacro: async ({argv: [timeout]}): Promise<void> => {
         this.#commandTimeout = parseInterval(timeout);
       },
     },
     wait: {
-      validateArguments: assertEqual(1),
-      executeMacro: async ({argv: [timeout]}) => {
+      validateArgs: validateArgsEq(1),
+      executeMacro: async ({argv: [timeout]}): Promise<void> => {
         const interval = parseInterval(timeout);
         const sleepResult = sleep(interval);
         this.#cancelCurrentCommand = sleepResult.cancel;
@@ -275,18 +276,18 @@ export class TestScriptImpl implements TestScript {
     },
   } as const;
 
-  #nextLine(): string | null {
-    if (this.#currentLine >= this.#text.length) return null;
-    const row = this.#text[this.#currentLine++];
-    const m = /^([^#]*)/.exec(row);
-    return m?.[1].trim() ? m[1] : this.#nextLine();
+  *#nextLine(): Generator<string | null> {
+    while (this.#currentLine < this.#text.length) {
+      const row = this.#text[this.#currentLine++];
+      const m = /^([^#]*)/.exec(row);
+      const str = m?.[1]?.trim();
+      if (str) yield str;
+    }
   }
 
   async *#executeSingleCommand(): AsyncGenerator<ExecutedCommandStats> {
-    for (;;) {
+    for (const row of this.#nextLine()) {
       this.signal?.throwIfInterrupted();
-      const row = this.#nextLine();
-      if (row === null) return;
       const {command, commandLine, argv, macro} = this.#protocol.parseCommand(row);
       if (!macro) {
         yield this.#sendCommandAndWaitResponse(this.#protocol.stringifyHardwareCommand(command, ...argv));
@@ -296,8 +297,8 @@ export class TestScriptImpl implements TestScript {
         this.#emit("message", "info", row);
         const executor = this.#MACROS[command];
         if (executor) {
-          const {validateArguments, executeMacro} = executor;
-          validateArguments(argv);
+          const {validateArgs, executeMacro} = executor;
+          validateArgs(argv);
           const ret = await executeMacro({commandLine, argv} as Command);
           if (ret) yield ret;
           // continue
@@ -355,31 +356,31 @@ export class TestScriptImpl implements TestScript {
   #ifCondition(condition: string, argv: string[]): Promise<ExecutedCommandStats> {
     switch (condition) {
       case "fail":
-        return this.#ifFail(argv);
+        return this.#executeIfFail(argv);
       case "pass":
-        return this.#ifPass(argv);
+        return this.#executeIfPass(argv);
     }
     throw new TestScriptError(`Unknown condition ${JSON.stringify(condition)}`, "SyntaxError");
   }
 
-  async #ifFail(args: string[]): Promise<ExecutedCommandStats> {
+  async #executeIfFail(args: string[]): Promise<ExecutedCommandStats> {
     return this.#testCounters.fail > 0 ? this.#sendOneCommandAndWaitResponse(args) : NULL_RESPONSE;
   }
 
-  async #ifPass(args: string[]): Promise<ExecutedCommandStats> {
+  async #executeIfPass(args: string[]): Promise<ExecutedCommandStats> {
     return this.#testCounters.pass > 0 && this.#testCounters.fail === 0 ? this.#sendOneCommandAndWaitResponse(args) : NULL_RESPONSE;
   }
 
   async #onCondition(condition: string, argv: string[]): Promise<ExecutedCommandStats> {
-    if (condition && argv.length) {
+    if (condition === "error") {
       this.#globalConditions[condition] = argv;
       return NULL_RESPONSE;
     }
     throw new TestScriptError(`Unknown global condition ${JSON.stringify(condition)}`, "SyntaxError");
   }
 
-  async #onStatus(status: string): Promise<void> {
-    const args: string[] | undefined | null = this.#globalConditions[status];
+  async #executeOnCondition(condition: string): Promise<void> {
+    const args: string[] | undefined | null = this.#globalConditions[condition];
     if (args?.length > 0) {
       try {
         const {response, elapsed} = await this.#sendOneCommandAndWaitResponse(args);
