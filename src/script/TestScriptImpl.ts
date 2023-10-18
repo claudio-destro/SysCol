@@ -225,7 +225,7 @@ export class TestScriptImpl implements TestScript {
       echoCommand: () => false,
       validateArgs: noValidation,
       executeMacro: async ({commandLine}): Promise<void> => {
-        if (commandLine?.match(/^off|on$/i)) {
+        if (commandLine?.match(/^\s*(off|on)\s*$/i)) {
           this.#traceCommands = commandLine === "on";
         } else {
           this.#emit("message", "log", commandLine);
@@ -319,8 +319,6 @@ export class TestScriptImpl implements TestScript {
       const {command, commandLine, argv, macro} = this.#protocol.parseCommand(row);
       if (!macro) {
         yield this.#sendCommandAndWaitResponse(this.#protocol.stringifyHardwareCommand(command, ...argv));
-      } else if (command === "echo") {
-        this.#emit("message", "log", commandLine);
       } else {
         const executor = this.#MACROS[command];
         if (executor) {
