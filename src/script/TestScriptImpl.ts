@@ -38,6 +38,10 @@ const validateMinimumArgs =
     }
   };
 
+const noValidation = (): void => {
+  /* ALWAYS VALID */
+};
+
 export class TestScriptImpl implements TestScript {
   signal?: TestScriptInterruptSignal | null;
   confirm: TestConfirmFunction = null;
@@ -46,6 +50,7 @@ export class TestScriptImpl implements TestScript {
   readonly #text: Array<string>;
   readonly #environment: Environment;
   readonly #protocol: CommandProtocol;
+  #traceCommands = true;
   #globalConditions: Record<string, string[]> = {};
   #readyState: TestScriptReadyState = "new";
   #currentLine = 0;
@@ -161,12 +166,14 @@ export class TestScriptImpl implements TestScript {
     Record<
       string,
       {
+        echoCommand: () => boolean;
         validateArgs: (args: string[]) => void;
         executeMacro: (command: Command) => Promise<ExecutedCommandStats | void>;
       }
     >
   > = {
     close_log_file: {
+      echoCommand: () => this.#traceCommands,
       validateArgs: validateArgsEq(0),
       executeMacro: async (): Promise<void> => {
         await this.#logFile?.close();
@@ -174,6 +181,7 @@ export class TestScriptImpl implements TestScript {
       },
     },
     close_serial_port: {
+      echoCommand: () => this.#traceCommands,
       validateArgs: validateArgsEq(0),
       executeMacro: async (): Promise<void> => {
         await this.#serialPort?.close();
@@ -181,6 +189,7 @@ export class TestScriptImpl implements TestScript {
       },
     },
     confirm_test: {
+      echoCommand: () => false,
       validateArgs: validateArgsEq(7),
       executeMacro: async ({argv: [prompt, testId, label0, value0, label1, value1, passValue]}): Promise<ExecutedCommandStats> => {
         try {
@@ -200,10 +209,11 @@ export class TestScriptImpl implements TestScript {
       },
     },
     continue: {
+      echoCommand: () => false,
       validateArgs: validateArgsEq(2),
       executeMacro: async ({argv: [prompt, label]}): Promise<void> => {
         try {
-          await this.confirm?.(this.#commandTimeout, prompt, {label, value: "OK"});
+          await this.confirm?.(5 * 60_000, prompt, {label, value: "OK"});
         } catch (e) {
           if (!this.signal.interrupted) {
             throw new TestScriptError(e.message, "InvocationError", e);
@@ -211,19 +221,33 @@ export class TestScriptImpl implements TestScript {
         }
       },
     },
+    echo: {
+      echoCommand: () => false,
+      validateArgs: noValidation,
+      executeMacro: async ({commandLine}): Promise<void> => {
+        if (commandLine?.match(/^off|on$/i)) {
+          this.#traceCommands = commandLine === "on";
+        } else {
+          this.#emit("message", "log", commandLine);
+        }
+      },
+    },
     if: {
+      echoCommand: () => this.#traceCommands,
       validateArgs: validateMinimumArgs(2),
       executeMacro: async ({argv}): Promise<void> => {
         await this.#ifCondition(argv[0], argv.slice(1));
       },
     },
     on: {
+      echoCommand: () => this.#traceCommands,
       validateArgs: validateMinimumArgs(2),
       executeMacro: async ({argv}): Promise<void> => {
         await this.#onCondition(argv[0], argv.slice(1));
       },
     },
     open_log_file: {
+      echoCommand: () => this.#traceCommands,
       validateArgs: validateArgsEq(2),
       executeMacro: async ({argv: [logFile, format]}): Promise<void> => {
         await this.#logFile?.close();
@@ -237,6 +261,7 @@ export class TestScriptImpl implements TestScript {
       },
     },
     open_serial_port: {
+      echoCommand: () => this.#traceCommands,
       validateArgs: validateArgsEq(2),
       executeMacro: async ({argv}): Promise<void> => {
         await this.#serialPort?.close();
@@ -250,18 +275,21 @@ export class TestScriptImpl implements TestScript {
       },
     },
     run_script: {
+      echoCommand: () => this.#traceCommands,
       validateArgs: validateArgsEq(1),
       executeMacro: async ({argv: [path]}): Promise<void> => {
         await this.#runScript(path);
       },
     },
     timeout: {
+      echoCommand: () => this.#traceCommands,
       validateArgs: validateArgsEq(1),
       executeMacro: async ({argv: [timeout]}): Promise<void> => {
         this.#commandTimeout = parseInterval(timeout);
       },
     },
     wait: {
+      echoCommand: () => this.#traceCommands,
       validateArgs: validateArgsEq(1),
       executeMacro: async ({argv: [timeout]}): Promise<void> => {
         const interval = parseInterval(timeout);
@@ -294,11 +322,11 @@ export class TestScriptImpl implements TestScript {
       } else if (command === "echo") {
         this.#emit("message", "log", commandLine);
       } else {
-        this.#emit("message", "info", row);
         const executor = this.#MACROS[command];
         if (executor) {
-          const {validateArgs, executeMacro} = executor;
-          validateArgs(argv);
+          const {echoCommand, validateArgs, executeMacro} = executor;
+          if (echoCommand()) this.#emit("message", "info", row);
+          validateArgs(argv); // XXX throws if invalid
           const ret = await executeMacro({commandLine, argv} as Command);
           if (ret) yield ret;
           // continue
