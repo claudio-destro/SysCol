@@ -105,7 +105,7 @@ export const confirm = async (lineno: number, timeout: number, prompt: string, .
         clear();
         reject(new Error("Timeout"));
       },
-      Math.max(timeout, 30_000),
+      Math.max(timeout, 5_000),
     );
 
     const clear = () => {
