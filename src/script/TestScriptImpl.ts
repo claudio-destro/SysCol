@@ -162,18 +162,24 @@ export class TestScriptImpl implements TestScript {
     return this.#events.listeners(event) as Array<TestScriptListeners[T]>;
   }
 
+  #echoCommand(row: string): void {
+    if (this.#traceCommands) {
+      this.#emit("message", "info", row);
+    }
+  }
+
   readonly #MACROS: Readonly<
     Record<
       string,
       {
-        echoCommand: () => boolean;
+        echoCommand: (row: string) => void;
         validateArgs: (args: string[]) => void;
         executeMacro: (command: Command) => Promise<ExecutedCommandStats | void>;
       }
     >
   > = {
     close_log_file: {
-      echoCommand: () => this.#traceCommands,
+      echoCommand: str => this.#echoCommand(str),
       validateArgs: validateArgsEq(0),
       executeMacro: async (): Promise<void> => {
         await this.#logFile?.close();
@@ -181,7 +187,7 @@ export class TestScriptImpl implements TestScript {
       },
     },
     close_serial_port: {
-      echoCommand: () => this.#traceCommands,
+      echoCommand: str => this.#echoCommand(str),
       validateArgs: validateArgsEq(0),
       executeMacro: async (): Promise<void> => {
         await this.#serialPort?.close();
@@ -225,29 +231,30 @@ export class TestScriptImpl implements TestScript {
       echoCommand: () => false,
       validateArgs: noValidation,
       executeMacro: async ({commandLine}): Promise<void> => {
-        if (commandLine?.match(/^\s*(off|on)\s*$/i)) {
-          this.#traceCommands = commandLine === "on";
+        const [, onOff] = /^\s*(off|on)\s*$/i.exec(commandLine) ?? [];
+        if (onOff) {
+          this.#traceCommands = onOff === "on";
         } else {
           this.#emit("message", "log", commandLine);
         }
       },
     },
     if: {
-      echoCommand: () => this.#traceCommands,
+      echoCommand: str => this.#echoCommand(str),
       validateArgs: validateMinimumArgs(2),
       executeMacro: async ({argv}): Promise<void> => {
         await this.#ifCondition(argv[0], argv.slice(1));
       },
     },
     on: {
-      echoCommand: () => this.#traceCommands,
+      echoCommand: str => this.#echoCommand(str),
       validateArgs: validateMinimumArgs(2),
       executeMacro: async ({argv}): Promise<void> => {
         await this.#onCondition(argv[0], argv.slice(1));
       },
     },
     open_log_file: {
-      echoCommand: () => this.#traceCommands,
+      echoCommand: str => this.#echoCommand(str),
       validateArgs: validateArgsEq(2),
       executeMacro: async ({argv: [logFile, format]}): Promise<void> => {
         await this.#logFile?.close();
@@ -261,7 +268,7 @@ export class TestScriptImpl implements TestScript {
       },
     },
     open_serial_port: {
-      echoCommand: () => this.#traceCommands,
+      echoCommand: str => this.#echoCommand(str),
       validateArgs: validateArgsEq(2),
       executeMacro: async ({argv}): Promise<void> => {
         await this.#serialPort?.close();
@@ -275,21 +282,21 @@ export class TestScriptImpl implements TestScript {
       },
     },
     run_script: {
-      echoCommand: () => this.#traceCommands,
+      echoCommand: str => this.#echoCommand(str),
       validateArgs: validateArgsEq(1),
       executeMacro: async ({argv: [path]}): Promise<void> => {
         await this.#runScript(path);
       },
     },
     timeout: {
-      echoCommand: () => this.#traceCommands,
+      echoCommand: str => this.#echoCommand(str),
       validateArgs: validateArgsEq(1),
       executeMacro: async ({argv: [timeout]}): Promise<void> => {
         this.#commandTimeout = parseInterval(timeout);
       },
     },
     wait: {
-      echoCommand: () => this.#traceCommands,
+      echoCommand: str => this.#echoCommand(str),
       validateArgs: validateArgsEq(1),
       executeMacro: async ({argv: [timeout]}): Promise<void> => {
         const interval = parseInterval(timeout);
@@ -323,7 +330,7 @@ export class TestScriptImpl implements TestScript {
         const executor = this.#MACROS[command];
         if (executor) {
           const {echoCommand, validateArgs, executeMacro} = executor;
-          if (echoCommand()) this.#emit("message", "info", row);
+          echoCommand(row);
           validateArgs(argv); // XXX throws if invalid
           const ret = await executeMacro({commandLine, argv} as Command);
           if (ret) yield ret;
