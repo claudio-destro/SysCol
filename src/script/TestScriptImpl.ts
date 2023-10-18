@@ -213,7 +213,7 @@ export class TestScriptImpl implements TestScript {
       validateArgs: validateArgsEq(2),
       executeMacro: async ({argv: [prompt, label]}): Promise<void> => {
         try {
-          await this.confirm?.(5 * 60_000, prompt, {label, value: "OK"});
+          await this.confirm?.(4 * 60 * 60_000, prompt, {label, value: "OK"});
         } catch (e) {
           if (!this.signal.interrupted) {
             throw new TestScriptError(e.message, "InvocationError", e);
