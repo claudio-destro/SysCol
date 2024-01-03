@@ -9,20 +9,9 @@ Pre-requisites:
 - [Node.js](https://nodejs.org/)
 - [git](https://git-scm.com)
 
-Clone the repository using `git` and `cd` into it:
+Clone the repository using `git` and `cd` into it.
 
-```shell
-git clone https://github.com/claudio-destro/SysCol
-cd SysCol
-```
-
-Alternatively
-
-1. download the ZIP
-2. unpack it
-3. `cd` into it
-
-Then install and start the project for local development:
+Install and start the project for local development:
 
 ```shell
 npm install
