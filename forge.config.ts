@@ -1,69 +1,54 @@
-import type {ForgeConfig, ResolvedForgeConfig} from "@electron-forge/shared-types";
+import type {ForgeConfig} from "@electron-forge/shared-types";
+import {MakerSquirrel} from "@electron-forge/maker-squirrel";
 import {MakerZIP} from "@electron-forge/maker-zip";
-import {AutoUnpackNativesPlugin} from "@electron-forge/plugin-auto-unpack-natives";
-import {WebpackPlugin} from "@electron-forge/plugin-webpack";
-import {spawn} from "node:child_process";
-
-import {mainConfig} from "./webpack.main.config";
-import {rendererConfig} from "./webpack.renderer.config";
-import MakerSquirrel from "@electron-forge/maker-squirrel";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const readPackageJson = async (_forgeConfig: ResolvedForgeConfig, packageJson: Record<string, any>): Promise<Record<string, any>> => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const {scripts, ...pkg} = packageJson;
-  return pkg;
-};
-
-const packageAfterPrune = async (_forgeConfig: ResolvedForgeConfig, buildPath: string): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    const npmInstall = spawn("npm", ["install", "--production"], {
-      cwd: buildPath,
-      stdio: "ignore",
-      shell: true,
-    });
-    npmInstall.on("close", code => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`Npm exited with error ${code} `));
-      }
-    });
-    npmInstall.on("error", reject);
-  });
-};
+import {MakerDeb} from "@electron-forge/maker-deb";
+import {MakerRpm} from "@electron-forge/maker-rpm";
+import {VitePlugin} from "@electron-forge/plugin-vite";
+import {FusesPlugin} from "@electron-forge/plugin-fuses";
+import {FuseV1Options, FuseVersion} from "@electron/fuses";
 
 const config: ForgeConfig = {
-  // XXX Since Node SerialPort is listed as external, it will be pruned during packaging process. Therefore, include hooks during build process.
-  // See https://stackoverflow.com/questions/71930401/webpack-not-including-module-with-electron-forge-and-serialport for more.
-  hooks: {
-    readPackageJson,
-    packageAfterPrune,
-  },
   packagerConfig: {
-    asar: true,
+    asar: true
   },
   rebuildConfig: {},
-  makers: [new MakerZIP({}, ["darwin"]), new MakerSquirrel({}, ["win32"])],
+  makers: [new MakerSquirrel({}), new MakerZIP({}, ["darwin"]), new MakerRpm({}), new MakerDeb({})],
   plugins: [
-    new AutoUnpackNativesPlugin({}),
-    new WebpackPlugin({
-      mainConfig,
-      renderer: {
-        config: rendererConfig,
-        entryPoints: [
-          {
-            html: "./src/electron.html",
-            js: "./src/environment/electron/renderer.ts",
-            name: "main_window",
-            preload: {
-              js: "./src/environment/electron/preload.ts",
-            },
-          },
-        ],
-      },
+    new VitePlugin({
+      // `build` can specify multiple entry builds, which can be Main process, Preload scripts, Worker process, etc.
+      // If you are familiar with Vite configuration, it will look really familiar.
+      build: [
+        {
+          // `entry` is just an alias for `build.lib.entry` in the corresponding file of `config`.
+          entry: "src/main.ts",
+          config: "vite.main.config.ts",
+          target: "main"
+        },
+        {
+          entry: "src/preload.ts",
+          config: "vite.preload.config.ts",
+          target: "preload"
+        }
+      ],
+      renderer: [
+        {
+          name: "main_window",
+          config: "vite.renderer.config.ts"
+        }
+      ]
     }),
-  ],
+    // Fuses are used to enable/disable various Electron functionality
+    // at package time, before code signing the application
+    new FusesPlugin({
+      version: FuseVersion.V1,
+      [FuseV1Options.RunAsNode]: false,
+      [FuseV1Options.EnableCookieEncryption]: true,
+      [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+      [FuseV1Options.EnableNodeCliInspectArguments]: false,
+      [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+      [FuseV1Options.OnlyLoadAppFromAsar]: true
+    })
+  ]
 };
 
 export default config;
